@@ -16,6 +16,7 @@ const gasLimit = parseInt(process.env.GAS_LIMIT || "5500000"); // Reasonable def
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
+  // ใน hardhat.config.js
   solidity: {
     version: "0.8.20",
     settings: {
@@ -23,7 +24,7 @@ module.exports = {
         enabled: true,
         runs: 200
       },
-      viaIR: true, // Enable intermediate representation for extra optimization
+      viaIR: true // เปิดกลับมาเมื่อ deploy จริง
     }
   },
   networks: {
