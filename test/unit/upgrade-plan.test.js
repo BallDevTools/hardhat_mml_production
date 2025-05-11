@@ -287,5 +287,4 @@ describe("CryptoMembershipNFT - Plan Upgrade", function () {
       expect(nftImage.description).to.include("Plan");
     });
   });
-});NFT.plans(1)).price;
-      const plan2Price = (await cryptoMembership
+});
