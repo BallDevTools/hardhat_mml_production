@@ -1,0 +1,787 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "./NFTMetadataLib.sol";
+import "./FinanceLib.sol";
+import "./MembershipLib.sol";
+import "./TokenLib.sol";
+import "./ContractErrors.sol";
+
+contract CryptoMembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
+    using TokenLib for IERC20;
+
+    struct ContractState {
+        uint256 tokenIdCounter;
+        uint256 planCount;
+        uint256 ownerBalance;
+        uint256 feeSystemBalance;
+        uint256 fundBalance;
+        uint256 totalCommissionPaid;
+        bool firstMemberRegistered;
+        bool paused;
+        uint256 emergencyWithdrawRequestTime;
+    }
+
+    ContractState private state;
+    IERC20 public immutable usdtToken;
+    uint8 private immutable _tokenDecimals;
+    address public priceFeed;
+    string private _baseTokenURI;
+
+    uint256 public constant MAX_MEMBERS_PER_CYCLE = 4;
+    uint256 public constant TIMELOCK_DURATION = 2 days;
+    uint256 private constant MIN_ACTION_DELAY = 1 minutes;
+    uint256 private constant UPGRADE_COOLDOWN = 1 days;
+
+    struct NFTImage {
+        string imageURI;
+        string name;
+        string description;
+        uint256 planId;
+        uint256 createdAt;
+    }
+
+    mapping(uint256 => MembershipLib.MembershipPlan) public plans;
+    mapping(address => MembershipLib.Member) public members;
+    mapping(uint256 => MembershipLib.CycleInfo) public planCycles;
+    mapping(uint256 => NFTImage) public tokenImages;
+    mapping(uint256 => string) public planDefaultImages;
+    mapping(address => uint256) private lastActionTimestamp;
+    mapping(address => uint256) private _lastUpgradeRequest;
+    mapping(address => address[]) private _referralChain;
+    bool private _inTransaction;
+
+    // Events
+    event PlanCreated(uint256 planId, string name, uint256 price, uint256 membersPerCycle);
+    event MemberRegistered(address indexed member, address indexed upline, uint256 planId, uint256 cycleNumber);
+    event ReferralPaid(address indexed from, address indexed to, uint256 amount);
+    event PlanUpgraded(address indexed member, uint256 oldPlanId, uint256 newPlanId, uint256 cycleNumber);
+    event NewCycleStarted(uint256 planId, uint256 cycleNumber);
+    event EmergencyWithdraw(address indexed to, uint256 amount);
+    event ContractPaused(bool status);
+    event PriceFeedUpdated(address indexed newPriceFeed);
+    event MemberExited(address indexed member, uint256 refundAmount);
+    event FundsDistributed(uint256 ownerAmount, uint256 feeAmount, uint256 fundAmount);
+    event UplineNotified(address indexed upline, address indexed downline, uint256 downlineCurrentPlan, uint256 downlineTargetPlan);
+    event PlanDefaultImageSet(uint256 indexed planId, string imageURI);
+    event BatchWithdrawalProcessed(uint256 totalOwner, uint256 totalFee, uint256 totalFund);
+    event EmergencyWithdrawRequested(uint256 timestamp);
+    event TimelockUpdated(uint256 newDuration);
+    event EmergencyWithdrawInitiated(uint256 timestamp, uint256 amount);
+    event MetadataUpdated(uint256 indexed tokenId, string newURI);
+    event TransferAttemptBlocked(address indexed from, address indexed to, uint256 tokenId);
+    event MembershipMinted(address indexed to, uint256 tokenId, string message);
+
+    modifier whenNotPaused() {
+        if (state.paused) revert ContractErrors.Paused();
+        _;
+    }
+
+    modifier onlyMember() {
+        if (balanceOf(msg.sender) == 0) revert ContractErrors.NotMember();
+        _;
+    }
+
+    modifier noReentrantTransfer() {
+        if (_inTransaction) revert ContractErrors.ReentrantTransfer();
+        _inTransaction = true;
+        _;
+        _inTransaction = false;
+    }
+
+    modifier preventFrontRunning() {
+        if (block.timestamp < lastActionTimestamp[msg.sender] + MIN_ACTION_DELAY) 
+            revert ContractErrors.TooSoon();
+        lastActionTimestamp[msg.sender] = block.timestamp;
+        _;
+    }
+
+    modifier validAddress(address _addr) {
+        if (_addr == address(0)) revert ContractErrors.ZeroAddress();
+        _;
+    }
+
+    constructor(address _usdtToken, address initialOwner)
+        ERC721("Crypto Membership NFT", "CMNFT")
+        Ownable(initialOwner)
+    {
+        usdtToken = IERC20(_usdtToken);
+        _tokenDecimals = IERC20Metadata(_usdtToken).decimals();
+        if (_tokenDecimals == 0) revert ContractErrors.InvalidDecimals();
+        _createDefaultPlans();
+        _setupDefaultImages();
+    }
+
+    function _setupDefaultImages() internal {
+        for (uint256 i = 1; i <= 16; ) {
+            planDefaultImages[i] = NFTMetadataLib.uint2str(i);
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    function _createDefaultPlans() internal {
+        uint256 decimal = 10**_tokenDecimals;
+        for (uint256 i = 1; i <= 16; ) {
+            _createPlan(
+                i * decimal,
+                NFTMetadataLib.uint2str(i),
+                MAX_MEMBERS_PER_CYCLE
+            );
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    function _update(
+        address to,
+        uint256 tokenId,
+        address auth
+    ) internal override returns (address) {
+        address from = _ownerOf(tokenId);
+        if (from != address(0) && to != address(0)) {
+            emit TransferAttemptBlocked(from, to, tokenId);
+            revert ContractErrors.NonTransferable();
+        }
+        return super._update(to, tokenId, auth);
+    }
+
+    function createPlan(
+        uint256 _price,
+        string calldata _name,
+        uint256 _membersPerCycle
+    ) external onlyOwner {
+        if (_membersPerCycle != MAX_MEMBERS_PER_CYCLE) revert ContractErrors.InvalidCycleMembers();
+        if (bytes(_name).length == 0) revert ContractErrors.EmptyName();
+        if (_price == 0) revert ContractErrors.ZeroPrice();
+        _createPlan(_price, _name, _membersPerCycle);
+    }
+
+    function _createPlan(
+        uint256 _price,
+        string memory _name,
+        uint256 _membersPerCycle
+    ) internal {
+        if (state.planCount > 0 && _price <= plans[state.planCount].price) 
+            revert ContractErrors.PriceTooLow();
+            
+        state.planCount++;
+        plans[state.planCount] = MembershipLib.MembershipPlan(
+            _price,
+            _name,
+            _membersPerCycle,
+            true
+        );
+        planCycles[state.planCount] = MembershipLib.CycleInfo(1, 0);
+        emit PlanCreated(state.planCount, _name, _price, _membersPerCycle);
+    }
+
+    function setPlanDefaultImage(uint256 _planId, string calldata _imageURI)
+        external
+        onlyOwner
+    {
+        if (_planId == 0 || _planId > state.planCount) revert ContractErrors.InvalidPlanID();
+        if (bytes(_imageURI).length == 0) revert ContractErrors.EmptyURI();
+        planDefaultImages[_planId] = _imageURI;
+        emit PlanDefaultImageSet(_planId, _imageURI);
+    }
+
+    function getNFTImage(uint256 _tokenId)
+        external
+        view
+        returns (
+            string memory imageURI,
+            string memory name,
+            string memory description,
+            uint256 planId,
+            uint256 createdAt
+        )
+    {
+        if (!_exists(_tokenId)) revert ContractErrors.NonexistentToken();
+        NFTImage memory image = tokenImages[_tokenId];
+        return (
+            image.imageURI,
+            image.name,
+            image.description,
+            image.planId,
+            image.createdAt
+        );
+    }
+
+    function tokenURI(uint256 _tokenId)
+        public
+        view
+        override
+        returns (string memory)
+    {
+        if (!_exists(_tokenId)) revert ContractErrors.NonexistentToken();
+        NFTImage memory image = tokenImages[_tokenId];
+        return
+            string(
+                abi.encodePacked(
+                    "data:application/json;base64,",
+                    NFTMetadataLib.base64Encode(
+                        abi.encodePacked(
+                            '{"name":"',
+                            image.name,
+                            '","description":"',
+                            image.description,
+                            " Non-transferable NFT.",
+                            '","image":"',
+                            image.imageURI,
+                            '","attributes":[{"trait_type":"Plan Level","value":"',
+                            NFTMetadataLib.uint2str(
+                                members[ownerOf(_tokenId)].planId
+                            ),
+                            '"},{"trait_type":"Transferable","value":"No"}]}'
+                        )
+                    )
+                )
+            );
+    }
+
+    function isTokenTransferable() external pure returns (bool) {
+        return false;
+    }
+
+    function registerMember(uint256 _planId, address _upline)
+        external
+        nonReentrant
+        whenNotPaused
+        preventFrontRunning
+        validAddress(_upline)
+    {
+        if (_planId != 1 || _planId > state.planCount) revert ContractErrors.Plan1Only();
+        if (!plans[_planId].isActive) revert ContractErrors.InactivePlan();
+        if (balanceOf(msg.sender) > 0) revert ContractErrors.AlreadyMember();
+        if (bytes(planDefaultImages[_planId]).length == 0) revert ContractErrors.NoPlanImage();
+
+        address finalUpline;
+        
+        if (!state.firstMemberRegistered) {
+            state.firstMemberRegistered = true;
+            finalUpline = owner();
+        } else if (_upline == address(0) || _upline == msg.sender) {
+            finalUpline = owner();
+        } else {
+            if (balanceOf(_upline) == 0) revert ContractErrors.UplineNotMember();
+            if (members[_upline].planId < _planId) revert ContractErrors.UplinePlanLow();
+            _referralChain[msg.sender] = new address[](1);
+            _referralChain[msg.sender][0] = _upline;
+            finalUpline = _upline;
+        }
+        
+        // ส่วนข้างล่างนี้ใช้ MembershipLib.determineUpline 
+        /*
+        address finalUpline = MembershipLib.determineUpline(
+            _upline, 
+            _planId, 
+            msg.sender, 
+            !state.firstMemberRegistered, 
+            owner(), 
+            members, 
+            this.balanceOf
+        );
+        
+        if (!state.firstMemberRegistered) {
+            state.firstMemberRegistered = true;
+        }
+        */
+
+        usdtToken.safeTransferFrom(msg.sender, address(this), plans[_planId].price);
+
+        uint256 tokenId = state.tokenIdCounter++;
+        _safeMintWithNotice(msg.sender, tokenId);
+        _setTokenImage(tokenId, _planId);
+        
+        // อัพเดทสถานะ cycle
+        MembershipLib.CycleInfo storage cycleInfo = planCycles[_planId];
+        cycleInfo.membersInCurrentCycle++;
+        if (cycleInfo.membersInCurrentCycle >= plans[_planId].membersPerCycle) {
+            cycleInfo.currentCycle++;
+            cycleInfo.membersInCurrentCycle = 0;
+            emit NewCycleStarted(_planId, cycleInfo.currentCycle);
+        }
+
+        members[msg.sender] = MembershipLib.Member(
+            finalUpline,
+            0,
+            0,
+            _planId,
+            cycleInfo.currentCycle,
+            block.timestamp
+        );
+        
+        (
+            uint256 ownerShare,
+            uint256 feeShare,
+            uint256 fundShare,
+            uint256 uplineShare
+        ) = FinanceLib.distributeFunds(plans[_planId].price, _planId);
+        
+        state.ownerBalance += ownerShare;
+        state.feeSystemBalance += feeShare;
+        state.fundBalance += fundShare;
+        
+        _handleUplinePayment(finalUpline, uplineShare);
+
+        emit FundsDistributed(ownerShare, feeShare, fundShare);
+        emit MemberRegistered(msg.sender, finalUpline, _planId, cycleInfo.currentCycle);
+    }
+
+    function _safeMintWithNotice(address to, uint256 tokenId) internal {
+        _safeMint(to, tokenId);
+        emit MembershipMinted(to, tokenId, "Non-transferable");
+    }
+
+    function _setTokenImage(uint256 tokenId, uint256 planId) private {
+        string memory name = plans[planId].name;
+        tokenImages[tokenId] = NFTImage(
+            planDefaultImages[planId],
+            name,
+            string(abi.encodePacked("Crypto Membership NFT - ", name, " Plan")),
+            planId,
+            block.timestamp
+        );
+    }
+
+    function _handleUplinePayment(address _upline, uint256 _uplineShare)
+        internal
+    {
+        if (
+            _upline == address(0) ||
+            members[_upline].planId < members[msg.sender].planId
+        ) {
+            state.ownerBalance += _uplineShare;
+            return;
+        }
+        _payReferralCommission(msg.sender, _upline, _uplineShare);
+        members[_upline].totalReferrals++;
+    }
+
+    function _payReferralCommission(
+        address _from,
+        address _to,
+        uint256 _amount
+    ) internal noReentrantTransfer {
+        usdtToken.safeTransfer(_to, _amount);
+        members[_to].totalEarnings += _amount;
+        state.totalCommissionPaid += _amount;
+        emit ReferralPaid(_from, _to, _amount);
+    }
+
+    function upgradePlan(uint256 _newPlanId)
+        external
+        nonReentrant
+        whenNotPaused
+        onlyMember
+        preventFrontRunning
+        noReentrantTransfer
+    {
+        if (block.timestamp < _lastUpgradeRequest[msg.sender] + UPGRADE_COOLDOWN)
+            revert ContractErrors.CooldownActive();
+            
+        _lastUpgradeRequest[msg.sender] = block.timestamp;
+        
+        if (_newPlanId == 0 || _newPlanId > state.planCount) 
+            revert ContractErrors.InvalidPlanID();
+        if (!plans[_newPlanId].isActive) 
+            revert ContractErrors.InactivePlan();
+
+        MembershipLib.Member storage member = members[msg.sender];
+        if (_newPlanId != member.planId + 1) 
+            revert ContractErrors.NextPlanOnly();
+
+        uint256 priceDifference = plans[_newPlanId].price - plans[member.planId].price;
+
+        // Store old plan data
+        uint256 oldPlanId = member.planId;
+        address upline = member.upline;
+
+        // Update cycle state
+        MembershipLib.CycleInfo storage cycleInfo = planCycles[_newPlanId];
+        cycleInfo.membersInCurrentCycle++;
+        if (cycleInfo.membersInCurrentCycle >= plans[_newPlanId].membersPerCycle) {
+            cycleInfo.currentCycle++;
+            cycleInfo.membersInCurrentCycle = 0;
+            emit NewCycleStarted(_newPlanId, cycleInfo.currentCycle);
+        }
+
+        // Update member data
+        member.cycleNumber = cycleInfo.currentCycle;
+        member.planId = _newPlanId;
+
+        // Update NFT metadata
+        uint256 tokenId = tokenOfOwnerByIndex(msg.sender, 0);
+        NFTImage storage image = tokenImages[tokenId];
+        image.planId = _newPlanId;
+        image.name = plans[_newPlanId].name;
+        image.description = string(
+            abi.encodePacked("Crypto Membership NFT - ", image.name, " Plan")
+        );
+
+        // Calculate fund distribution
+        (
+            uint256 ownerShare,
+            uint256 feeShare,
+            uint256 fundShare,
+            uint256 uplineShare
+        ) = FinanceLib.distributeFunds(priceDifference, _newPlanId);
+        
+        state.ownerBalance += ownerShare;
+        state.feeSystemBalance += feeShare;
+        state.fundBalance += fundShare;
+
+        // Notify upline if needed
+        if (upline != address(0) && members[upline].planId < _newPlanId) {
+            emit UplineNotified(upline, msg.sender, oldPlanId, _newPlanId);
+        }
+
+        // Process payment after all state updates
+        usdtToken.safeTransferFrom(msg.sender, address(this), priceDifference);
+        _handleUplinePayment(upline, uplineShare);
+
+        // Emit events
+        emit FundsDistributed(ownerShare, feeShare, fundShare);
+        emit PlanUpgraded(
+            msg.sender,
+            oldPlanId,
+            _newPlanId,
+            cycleInfo.currentCycle
+        );
+    }
+
+    function exitMembership() external nonReentrant whenNotPaused onlyMember {
+        MembershipLib.Member storage member = members[msg.sender];
+        if (block.timestamp <= member.registeredAt + 30 days) 
+            revert ContractErrors.ThirtyDayLock();
+
+        uint256 refundAmount = (plans[member.planId].price * 30) / 100;
+        if (state.fundBalance < refundAmount) revert ContractErrors.LowFundBalance();
+        
+        state.fundBalance -= refundAmount;
+
+        uint256 tokenId = tokenOfOwnerByIndex(msg.sender, 0);
+        delete tokenImages[tokenId];
+        _burn(tokenId);
+        delete members[msg.sender];
+        
+        usdtToken.safeTransfer(msg.sender, refundAmount);
+        emit MemberExited(msg.sender, refundAmount);
+    }
+
+    function withdrawOwnerBalance(uint256 amount)
+        external
+        onlyOwner
+        nonReentrant
+        noReentrantTransfer
+    {
+        if (amount > state.ownerBalance) revert ContractErrors.LowOwnerBalance();
+        state.ownerBalance -= amount;
+        usdtToken.safeTransfer(owner(), amount);
+    }
+
+    function withdrawFeeSystemBalance(uint256 amount)
+        external
+        onlyOwner
+        nonReentrant
+        noReentrantTransfer
+    {
+        if (amount > state.feeSystemBalance) revert ContractErrors.LowFeeBalance();
+        state.feeSystemBalance -= amount;
+        usdtToken.safeTransfer(owner(), amount);
+    }
+
+    function withdrawFundBalance(uint256 amount)
+        external
+        onlyOwner
+        nonReentrant
+        noReentrantTransfer
+    {
+        if (amount > state.fundBalance) revert ContractErrors.LowFundBalance();
+        state.fundBalance -= amount;
+        usdtToken.safeTransfer(owner(), amount);
+    }
+
+    struct WithdrawalRequest {
+        address recipient;
+        uint256 amount;
+        uint256 balanceType; // 0 = owner, 1 = fee, 2 = fund
+    }
+
+    function batchWithdraw(WithdrawalRequest[] calldata requests)
+        external
+        onlyOwner
+        nonReentrant
+        noReentrantTransfer
+    {
+        if (requests.length == 0 || requests.length > 20)
+            revert ContractErrors.InvalidRequests();
+            
+        uint256 totalOwner;
+        uint256 totalFee;
+        uint256 totalFund;
+
+        for (uint256 i = 0; i < requests.length; ) {
+            WithdrawalRequest calldata req = requests[i];
+            if (req.recipient == address(0) || req.amount == 0)
+                revert ContractErrors.InvalidRequest();
+                
+            if (req.balanceType == 0) {
+                if (req.amount > state.ownerBalance) revert ContractErrors.LowOwnerBalance();
+                totalOwner += req.amount;
+                state.ownerBalance -= req.amount;
+            } else if (req.balanceType == 1) {
+                if (req.amount > state.feeSystemBalance) revert ContractErrors.LowFeeBalance();
+                totalFee += req.amount;
+                state.feeSystemBalance -= req.amount;
+            } else {
+                if (req.amount > state.fundBalance) revert ContractErrors.LowFundBalance();
+                totalFund += req.amount;
+                state.fundBalance -= req.amount;
+            }
+            usdtToken.safeTransfer(req.recipient, req.amount);
+            unchecked {
+                ++i;
+            }
+        }
+        emit BatchWithdrawalProcessed(totalOwner, totalFee, totalFund);
+    }
+
+    function getPlanCycleInfo(uint256 _planId)
+        external
+        view
+        returns (
+            uint256 currentCycle,
+            uint256 membersInCurrentCycle,
+            uint256 membersPerCycle
+        )
+    {
+        if (_planId == 0 || _planId > state.planCount) 
+            revert ContractErrors.InvalidPlanID();
+            
+        MembershipLib.CycleInfo memory cycleInfo = planCycles[_planId];
+        return (
+            cycleInfo.currentCycle,
+            cycleInfo.membersInCurrentCycle,
+            plans[_planId].membersPerCycle
+        );
+    }
+
+    function getSystemStats()
+        external
+        view
+        returns (
+            uint256 totalMembers,
+            uint256 totalRevenue,
+            uint256 totalCommission,
+            uint256 ownerFunds,
+            uint256 feeFunds,
+            uint256 fundFunds
+        )
+    {
+        return (
+            totalSupply(),
+            state.ownerBalance +
+                state.feeSystemBalance +
+                state.fundBalance +
+                state.totalCommissionPaid,
+            state.totalCommissionPaid,
+            state.ownerBalance,
+            state.feeSystemBalance,
+            state.fundBalance
+        );
+    }
+
+    function getContractStatus()
+        external
+        view
+        returns (
+            bool isPaused,
+            uint256 totalBalance,
+            uint256 memberCount,
+            uint256 currentPlanCount,
+            bool hasEmergencyRequest,
+            uint256 emergencyTimeRemaining
+        )
+    {
+        uint256 timeRemaining = state.emergencyWithdrawRequestTime > 0
+            ? state.emergencyWithdrawRequestTime +
+                TIMELOCK_DURATION -
+                block.timestamp
+            : 0;
+        return (
+            state.paused,
+            usdtToken.balanceOf(address(this)),
+            totalSupply(),
+            state.planCount,
+            state.emergencyWithdrawRequestTime > 0,
+            timeRemaining
+        );
+    }
+
+    function getReferralChain(address _member)
+        external
+        view
+        returns (address[] memory)
+    {
+        address[] memory chain = new address[](1);
+        chain[0] = members[_member].upline;
+        return chain;
+    }
+
+    function updateMembersPerCycle(uint256 _planId, uint256 _newMembersPerCycle)
+        external
+        onlyOwner
+    {
+        if (_planId == 0 || _planId > state.planCount) revert ContractErrors.InvalidPlanID();
+        if (_newMembersPerCycle != MAX_MEMBERS_PER_CYCLE) revert ContractErrors.InvalidCycleMembers();
+        plans[_planId].membersPerCycle = _newMembersPerCycle;
+    }
+
+    function setBaseURI(string calldata baseURI) external onlyOwner {
+        if (bytes(baseURI).length == 0) revert ContractErrors.EmptyURI();
+        _baseTokenURI = baseURI;
+    }
+
+    function _baseURI() internal view override returns (string memory) {
+        return _baseTokenURI;
+    }
+
+    function setPlanStatus(uint256 _planId, bool _isActive) external onlyOwner {
+        if (_planId == 0 || _planId > state.planCount) revert ContractErrors.InvalidPlanID();
+        plans[_planId].isActive = _isActive;
+    }
+
+    function setPriceFeed(address _priceFeed) external onlyOwner {
+        if (_priceFeed == address(0)) revert ContractErrors.ZeroAddress();
+        priceFeed = _priceFeed;
+        emit PriceFeedUpdated(_priceFeed);
+    }
+
+    function setPaused(bool _paused) external onlyOwner {
+        state.paused = _paused;
+        emit ContractPaused(_paused);
+    }
+
+    function requestEmergencyWithdraw() external onlyOwner {
+        state.emergencyWithdrawRequestTime = block.timestamp;
+        emit EmergencyWithdrawRequested(block.timestamp);
+    }
+
+    function cancelEmergencyWithdraw() external onlyOwner {
+        if (state.emergencyWithdrawRequestTime == 0) revert ContractErrors.NoRequest();
+        state.emergencyWithdrawRequestTime = 0;
+        emit EmergencyWithdrawRequested(0);
+    }
+
+    function emergencyWithdraw()
+        external
+        onlyOwner
+        nonReentrant
+        noReentrantTransfer
+    {
+        if (state.emergencyWithdrawRequestTime == 0) revert ContractErrors.NoRequest();
+        if (block.timestamp < state.emergencyWithdrawRequestTime + TIMELOCK_DURATION)
+            revert ContractErrors.TimelockActive();
+
+        uint256 contractBalance = usdtToken.balanceOf(address(this));
+        if (contractBalance == 0) revert ContractErrors.ZeroBalance();
+
+        uint256 expectedBalance = state.ownerBalance +
+            state.feeSystemBalance +
+            state.fundBalance;
+
+        emit EmergencyWithdrawInitiated(block.timestamp, contractBalance);
+
+        // แก้ไขลอจิกการคำนวณส่วนแบ่ง
+        if (expectedBalance > 0) {
+            uint256 ownerShare;
+            uint256 feeShare;
+            uint256 fundShare;
+
+            // คำนวณสัดส่วนจากยอดเงินที่คาดหวังและยอดเงินจริง
+            if (contractBalance >= expectedBalance) {
+                // ถ้ายอดเงินจริงมากกว่าหรือเท่ากับยอดเงินที่คาดหวัง ให้จ่ายเต็มจำนวน
+                ownerShare = state.ownerBalance;
+                feeShare = state.feeSystemBalance;
+                fundShare = state.fundBalance;
+            } else {
+                // ถ้ายอดเงินจริงน้อยกว่ายอดเงินที่คาดหวัง ให้คำนวณตามสัดส่วน
+                ownerShare = (contractBalance * state.ownerBalance) / expectedBalance;
+                feeShare = (contractBalance * state.feeSystemBalance) / expectedBalance;
+
+                // ตรวจสอบการปัดเศษและความถูกต้อง
+                if (ownerShare + feeShare > contractBalance) {
+                    // ปรับแก้ในกรณีที่การคำนวณทำให้ผลรวมเกินยอดเงินจริง
+                    if (ownerShare > feeShare) {
+                        ownerShare = contractBalance - feeShare;
+                    } else {
+                        feeShare = contractBalance - ownerShare;
+                    }
+                    fundShare = 0;
+                } else {
+                    fundShare = contractBalance - ownerShare - feeShare;
+                }
+            }
+
+            // รีเซ็ตค่าสมดุลทุกรายการเป็น 0
+            state.ownerBalance = 0;
+            state.feeSystemBalance = 0;
+            state.fundBalance = 0;
+
+            // โอนเงินทั้งหมดไปยังเจ้าของสัญญา
+            usdtToken.safeTransfer(owner(), contractBalance);
+
+            emit EmergencyWithdraw(owner(), contractBalance);
+            emit FundsDistributed(ownerShare, feeShare, fundShare);
+        } else {
+            // ถ้าไม่มียอดเงินที่คาดหวัง ก็โอนเงินทั้งหมดไปยังเจ้าของสัญญา
+            state.ownerBalance = 0;
+            state.feeSystemBalance = 0;
+            state.fundBalance = 0;
+            usdtToken.safeTransfer(owner(), contractBalance);
+            emit EmergencyWithdraw(owner(), contractBalance);
+        }
+
+        // รีเซ็ตเวลาการร้องขอถอนเงินฉุกเฉิน
+        state.emergencyWithdrawRequestTime = 0;
+    }
+
+    function restartAfterPause() external onlyOwner {
+        if (!state.paused) revert ContractErrors.NotPaused();
+        state.paused = false;
+        emit ContractPaused(false);
+    }
+
+    function validateContractBalance()
+        public
+        view
+        returns (
+            bool,
+            uint256,
+            uint256
+        )
+    {
+        uint256 expectedBalance = state.ownerBalance +
+            state.feeSystemBalance +
+            state.fundBalance;
+        uint256 actualBalance = usdtToken.balanceOf(address(this));
+        return (
+            actualBalance >= expectedBalance,
+            expectedBalance,
+            actualBalance
+        );
+    }
+
+    function _exists(uint256 tokenId) internal view returns (bool) {
+        return _ownerOf(tokenId) != address(0);
+    }
+}
