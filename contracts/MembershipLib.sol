@@ -1,13 +1,8 @@
-
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import "./ContractErrors.sol";
 
-/**
- * @title MembershipLib
- * @dev Library for managing NFT membership operations
- */
 library MembershipLib {
     struct MembershipPlan {
         uint256 price;
@@ -30,12 +25,6 @@ library MembershipLib {
         uint256 membersInCurrentCycle;
     }
 
-    /**
-     * @dev Updates a membership cycle and returns the current cycle number
-     * @param cycleInfo The cycle info storage reference
-     * @param plan The membership plan
-     * @return The current cycle number
-     */
     function updateCycle(
         CycleInfo storage cycleInfo,
         MembershipPlan storage plan
@@ -50,13 +39,6 @@ library MembershipLib {
         return cycleInfo.currentCycle;
     }
 
-    /**
-     * @dev Validates a plan upgrade request
-     * @param newPlanId The ID of the target plan
-     * @param currentMember The current member data
-     * @param plans Mapping of plan IDs to plans
-     * @param planCount The total number of plans
-     */
     function validatePlanUpgrade(
         uint256 newPlanId,
         Member storage currentMember,
@@ -68,17 +50,6 @@ library MembershipLib {
         if (newPlanId != currentMember.planId + 1) revert ContractErrors.NextPlanOnly();
     }
 
-    /**
-     * @dev Determines the valid upline for a new member
-     * @param upline The proposed upline address
-     * @param planId The plan ID of the new member
-     * @param sender The address of the new member
-     * @param isFirstMember Whether this is the first member registration
-     * @param contractOwner The owner of the contract
-     * @param members Mapping of addresses to members
-     * @param hasBalance Function to check if an address has a balance
-     * @return The determined upline address
-     */
     function determineUpline(
         address upline,
         uint256 planId,

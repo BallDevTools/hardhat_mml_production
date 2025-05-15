@@ -5,20 +5,9 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./ContractErrors.sol";
 
-/**
- * @title TokenLib
- * @dev Library for safe token transfers and financial operations
- */
 library TokenLib {
     using SafeERC20 for IERC20;
 
-    /**
-     * @dev Safely transfers tokens from sender to receiver
-     * @param token The ERC20 token contract
-     * @param from The sender address
-     * @param to The receiver address
-     * @param amount The amount to transfer
-     */
     function safeTransferFrom(
         IERC20 token,
         address from,
@@ -32,12 +21,6 @@ library TokenLib {
             revert ContractErrors.InvalidAmount();
     }
 
-    /**
-     * @dev Safely transfers tokens to receiver
-     * @param token The ERC20 token contract
-     * @param to The receiver address
-     * @param amount The amount to transfer
-     */
     function safeTransfer(
         IERC20 token,
         address to,
@@ -50,11 +33,6 @@ library TokenLib {
             revert ContractErrors.InvalidAmount();
     }
 
-    /**
-     * @dev Validates a withdrawal request
-     * @param requestedAmount The amount requested
-     * @param availableBalance The available balance
-     */
     function validateWithdrawal(
         uint256 requestedAmount,
         uint256 availableBalance

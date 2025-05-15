@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-/**
- * @title FinanceLib
- * @dev Library สำหรับจัดการการแจกจ่ายเงินและการคำนวณ Shares
- */
 library FinanceLib {
     uint256 private constant HUNDRED_PERCENT = 100;
     uint256 private constant COMPANY_OWNER_SHARE = 80;
@@ -12,12 +8,6 @@ library FinanceLib {
     uint256 private constant USER_UPLINE_SHARE = 60;
     uint256 private constant USER_FUND_SHARE = 40;
 
-    /**
-     * @dev คำนวณเปอร์เซ็นต์ Shares ตาม Plan ID
-     * @param planId ID ของแผน
-     * @return userShare เปอร์เซ็นต์สำหรับผู้ใช้
-     * @return companyShare เปอร์เซ็นต์สำหรับบริษัท
-     */
     function getPlanShares(uint256 planId) internal pure returns (uint256 userShare, uint256 companyShare) {
         if (planId <= 4) {
             return (50, 50);
@@ -29,16 +19,6 @@ library FinanceLib {
             return (60, 40);
         }
     }
-
-    /**
-     * @dev แจกจ่ายเงินตามสัดส่วน
-     * @param _amount จำนวนเงินทั้งหมด
-     * @param _currentPlanId Plan ID ของผู้ใช้
-     * @return ownerShare จำนวนเงินสำหรับเจ้าของ
-     * @return feeShare จำนวนเงินสำหรับค่าธรรมเนียม
-     * @return fundShare จำนวนเงินสำหรับกองทุน
-     * @return uplineShare จำนวนเงินสำหรับ Upline
-     */
     function distributeFunds(uint256 _amount, uint256 _currentPlanId)
         internal
         pure

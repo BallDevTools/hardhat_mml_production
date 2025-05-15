@@ -1,16 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-/**
- * @title NFTMetadataLib
- * @dev Library สำหรับจัดการการเข้ารหัส Metadata ของ NFT
- */
 library NFTMetadataLib {
-    /**
-     * @dev แปลง uint เป็น string
-     * @param _i ตัวเลขที่ต้องการแปลง
-     * @return String ที่แปลงแล้ว
-     */
     function uint2str(uint256 _i) internal pure returns (string memory) {
         if (_i == 0) return "0";
         uint256 j = _i;
@@ -31,11 +22,6 @@ library NFTMetadataLib {
         return string(bstr);
     }
 
-    /**
-     * @dev เข้ารหัสข้อมูลเป็น Base64
-     * @param data ข้อมูลที่ต้องการเข้ารหัส
-     * @return String ที่เข้ารหัสเป็น Base64
-     */
     function base64Encode(bytes memory data) internal pure returns (string memory) {
         string memory TABLE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
         uint256 len = data.length;
