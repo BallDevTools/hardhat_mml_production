@@ -27,14 +27,14 @@ describe("TokenLib Unit Tests", function () {
   
   describe("safeTransferFrom", function () {
     it("Should safely transfer tokens from user to contract", async function () {
-      const { nft, usdt, user1 } = await loadFixture(deployFixture);
+      const { nft, usdt, owner, user1 } = await loadFixture(deployFixture);
       
       // ตรวจสอบยอดคงเหลือก่อนโอน
       const balanceBefore = await usdt.balanceOf(user1.address);
       const contractBalanceBefore = await usdt.balanceOf(nft.target);
       
       // ลงทะเบียนสมาชิกซึ่งจะเรียกใช้ TokenLib.safeTransferFrom
-      await nft.connect(user1).registerMember(1, ethers.ZeroAddress);
+      await nft.connect(user1).registerMember(1, owner.address);
       
       // ตรวจสอบยอดคงเหลือหลังโอน
       const balanceAfter = await usdt.balanceOf(user1.address);
@@ -53,14 +53,14 @@ describe("TokenLib Unit Tests", function () {
     });
     
     it("Should fail if approval is insufficient", async function () {
-      const { nft, usdt, user2 } = await loadFixture(deployFixture);
+      const { nft, usdt, owner, user2 } = await loadFixture(deployFixture);
       
       // ให้ USDT แก่ user2 แต่ไม่อนุมัติให้ contract ใช้
       await usdt.transfer(user2.address, ethers.parseEther("10"));
       
       // ควรล้มเหลวเนื่องจากไม่ได้อนุมัติให้ contract ใช้ USDT
       await expect(
-        nft.connect(user2).registerMember(1, ethers.ZeroAddress)
+        nft.connect(user2).registerMember(1, owner.address)
       ).to.be.reverted;
     });
   });
