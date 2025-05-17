@@ -56,6 +56,7 @@ contract CryptoMembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
     mapping(address => address[]) private _referralChain;
     bool private _inTransaction;
 
+    // Events
     event PlanCreated(uint256 planId, string name, uint256 price, uint256 membersPerCycle);
     event MemberRegistered(address indexed member, address indexed upline, uint256 planId, uint256 cycleNumber);
     event ReferralPaid(address indexed from, address indexed to, uint256 amount);
@@ -114,16 +115,27 @@ contract CryptoMembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
         if (_tokenDecimals == 0) revert ContractErrors.InvalidDecimals();
         _createDefaultPlans();
         _setupDefaultImages();
+        _baseTokenURI = "ipfs://";
     }
 
     function _setupDefaultImages() internal {
-        for (uint256 i = 1; i <= 16; ) {
-            planDefaultImages[i] = NFTMetadataLib.uint2str(i);
-            unchecked {
-                ++i;
-            }
-        }
-    }
+    planDefaultImages[1] = "bafybeignaodj5a2bmtt6ccz3mmf7dx5iseib3orllgf4ed4tdnfijnxfrq";
+    planDefaultImages[2] = "bafybeifymsrfkqzlmr2jetihb4cd7siro3vhq5s7xjjecshq3yoewxbbmy";
+    planDefaultImages[3] = "bafybeib36tixhjirirdq2hotmb6os5lgln66m4dseyhp353mqbbn5ubrzq";
+    planDefaultImages[4] = "bafybeihmyvmywvecl5x2idguejduw2bsy4kynplhnas37ji7qnir5y4k2i";
+    planDefaultImages[5] = "bafybeibkna2uzb5irusxczngkxdbijcpfed5lilsqa4yamkdzfrcbplyqy";
+    planDefaultImages[6] = "bafybeias7xs36rcrq64uswehgqfiqb5hkosjfmwya2jdmkt67fwqxybxk4";
+    planDefaultImages[7] = "bafybeihbrva37xflvzcqb3axouyd5kndshtldqooqgdcuniuahngjcxf2e";
+    planDefaultImages[8] = "bafybeiamlxlrejlvtbrwg7crgobz5wvanclef2uf7lrijw55hlhipnk4fu";
+    planDefaultImages[9] = "bafybeihsomjcfbqbb7uk27bxbgfooba7g4ggywnenleq442vr5rw3o3ygy";
+    planDefaultImages[10] = "bafybeiezl6kslyy7cmm2c5wdtpyj2awdzjuwqkp726owhx5x6llg4s2kwa";
+    planDefaultImages[11] = "bafybeigxtlrnxjm4gtkxobkg4mro5benoogrqtphqvewag6mcnqakcw7hm";
+    planDefaultImages[12] = "bafybeibi7daxnplgosboky33p3uvmhw3gg6bg5uojikdnhfaqryp6tb64y";
+    planDefaultImages[13] = "bafybeia7u3oblw32wh5e725tmxc47szss32ydbbc42pzserqky3dqt7ira";
+    planDefaultImages[14] = "bafybeicawcal7gklqjaorir7n6y3iewgzk3linc2srf4pj26pqcuypm5o4";
+    planDefaultImages[15] = "bafybeihqv3763mh2csw2vwhzluppejds6ahr7qyd7ejo5epyy5nnqmjvx4";
+    planDefaultImages[16] = "bafybeiav5pvrydstsr3ffjdscinlklhmjy3trhs6qglnilltbvxews5omm";
+}
 
     function _createDefaultPlans() internal {
         uint256 decimal = 10**_tokenDecimals;
@@ -276,6 +288,23 @@ contract CryptoMembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
             _referralChain[msg.sender][0] = _upline;
             finalUpline = _upline;
         }
+        
+        // ส่วนข้างล่างนี้ใช้ MembershipLib.determineUpline 
+        /*
+        address finalUpline = MembershipLib.determineUpline(
+            _upline, 
+            _planId, 
+            msg.sender, 
+            !state.firstMemberRegistered, 
+            owner(), 
+            members, 
+            this.balanceOf
+        );
+        
+        if (!state.firstMemberRegistered) {
+            state.firstMemberRegistered = true;
+        }
+        */
 
         usdtToken.safeTransferFrom(msg.sender, address(this), plans[_planId].price);
 
@@ -283,6 +312,7 @@ contract CryptoMembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
         _safeMintWithNotice(msg.sender, tokenId);
         _setTokenImage(tokenId, _planId);
         
+        // อัพเดทสถานะ cycle
         MembershipLib.CycleInfo storage cycleInfo = planCycles[_planId];
         cycleInfo.membersInCurrentCycle++;
         if (cycleInfo.membersInCurrentCycle >= plans[_planId].membersPerCycle) {
@@ -382,9 +412,11 @@ contract CryptoMembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
 
         uint256 priceDifference = plans[_newPlanId].price - plans[member.planId].price;
 
+        // Store old plan data
         uint256 oldPlanId = member.planId;
         address upline = member.upline;
 
+        // Update cycle state
         MembershipLib.CycleInfo storage cycleInfo = planCycles[_newPlanId];
         cycleInfo.membersInCurrentCycle++;
         if (cycleInfo.membersInCurrentCycle >= plans[_newPlanId].membersPerCycle) {
@@ -393,9 +425,11 @@ contract CryptoMembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
             emit NewCycleStarted(_newPlanId, cycleInfo.currentCycle);
         }
 
+        // Update member data
         member.cycleNumber = cycleInfo.currentCycle;
         member.planId = _newPlanId;
 
+        // Update NFT metadata
         uint256 tokenId = tokenOfOwnerByIndex(msg.sender, 0);
         NFTImage storage image = tokenImages[tokenId];
         image.planId = _newPlanId;
@@ -404,6 +438,7 @@ contract CryptoMembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
             abi.encodePacked("Crypto Membership NFT - ", image.name, " Plan")
         );
 
+        // Calculate fund distribution
         (
             uint256 ownerShare,
             uint256 feeShare,
@@ -415,13 +450,16 @@ contract CryptoMembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
         state.feeSystemBalance += feeShare;
         state.fundBalance += fundShare;
 
+        // Notify upline if needed
         if (upline != address(0) && members[upline].planId < _newPlanId) {
             emit UplineNotified(upline, msg.sender, oldPlanId, _newPlanId);
         }
 
+        // Process payment after all state updates
         usdtToken.safeTransferFrom(msg.sender, address(this), priceDifference);
         _handleUplinePayment(upline, uplineShare);
 
+        // Emit events
         emit FundsDistributed(ownerShare, feeShare, fundShare);
         emit PlanUpgraded(
             msg.sender,
@@ -486,7 +524,7 @@ contract CryptoMembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
     struct WithdrawalRequest {
         address recipient;
         uint256 amount;
-        uint256 balanceType; 
+        uint256 balanceType; // 0 = owner, 1 = fee, 2 = fund
     }
 
     function batchWithdraw(WithdrawalRequest[] calldata requests)
@@ -674,20 +712,26 @@ contract CryptoMembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
 
         emit EmergencyWithdrawInitiated(block.timestamp, contractBalance);
 
+        // แก้ไขลอจิกการคำนวณส่วนแบ่ง
         if (expectedBalance > 0) {
             uint256 ownerShare;
             uint256 feeShare;
             uint256 fundShare;
 
+            // คำนวณสัดส่วนจากยอดเงินที่คาดหวังและยอดเงินจริง
             if (contractBalance >= expectedBalance) {
+                // ถ้ายอดเงินจริงมากกว่าหรือเท่ากับยอดเงินที่คาดหวัง ให้จ่ายเต็มจำนวน
                 ownerShare = state.ownerBalance;
                 feeShare = state.feeSystemBalance;
                 fundShare = state.fundBalance;
             } else {
+                // ถ้ายอดเงินจริงน้อยกว่ายอดเงินที่คาดหวัง ให้คำนวณตามสัดส่วน
                 ownerShare = (contractBalance * state.ownerBalance) / expectedBalance;
                 feeShare = (contractBalance * state.feeSystemBalance) / expectedBalance;
 
+                // ตรวจสอบการปัดเศษและความถูกต้อง
                 if (ownerShare + feeShare > contractBalance) {
+                    // ปรับแก้ในกรณีที่การคำนวณทำให้ผลรวมเกินยอดเงินจริง
                     if (ownerShare > feeShare) {
                         ownerShare = contractBalance - feeShare;
                     } else {
@@ -699,15 +743,18 @@ contract CryptoMembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
                 }
             }
 
+            // รีเซ็ตค่าสมดุลทุกรายการเป็น 0
             state.ownerBalance = 0;
             state.feeSystemBalance = 0;
             state.fundBalance = 0;
 
+            // โอนเงินทั้งหมดไปยังเจ้าของสัญญา
             usdtToken.safeTransfer(owner(), contractBalance);
 
             emit EmergencyWithdraw(owner(), contractBalance);
             emit FundsDistributed(ownerShare, feeShare, fundShare);
         } else {
+            // ถ้าไม่มียอดเงินที่คาดหวัง ก็โอนเงินทั้งหมดไปยังเจ้าของสัญญา
             state.ownerBalance = 0;
             state.feeSystemBalance = 0;
             state.fundBalance = 0;
@@ -715,6 +762,7 @@ contract CryptoMembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
             emit EmergencyWithdraw(owner(), contractBalance);
         }
 
+        // รีเซ็ตเวลาการร้องขอถอนเงินฉุกเฉิน
         state.emergencyWithdrawRequestTime = 0;
     }
 
