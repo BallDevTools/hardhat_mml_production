@@ -1,4 +1,4 @@
-// ใน test/integration/PlanUpgradeChain.test.js (สร้างใหม่)
+// แก้ไขใน test/integration/PlanUpgradeChain.test.js
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
@@ -7,7 +7,7 @@ describe("Plan Upgrade Chain Tests", function () {
   async function deployFixture() {
     const [owner, ...users] = await ethers.getSigners();
     
-    // Deploy fake USDT token
+    // Deploy FakeUSDT token
     const FakeUSDT = await ethers.getContractFactory("FakeUSDT");
     const usdt = await FakeUSDT.deploy();
     await usdt.waitForDeployment();
@@ -17,12 +17,20 @@ describe("Plan Upgrade Chain Tests", function () {
     const nft = await CryptoMembershipNFT.deploy(await usdt.getAddress(), owner.address);
     await nft.waitForDeployment();
 
-    // Mint some USDT to users for testing
-    const usdtAmount = ethers.parseUnits("1000", 6); // 1000 USDT
+    // *** วิธีที่ 1: ใช้ transfer แทน mint ***
+    const usdtAmount = ethers.parseUnits("1000", 6); // 1000 USDT (6 decimals)
     for (const user of users) {
-      await usdt.mint(user.address, usdtAmount);
+      // ใช้ transfer แทน mint
+      await usdt.transfer(user.address, usdtAmount);
       await usdt.connect(user).approve(await nft.getAddress(), usdtAmount);
     }
+
+    // *** วิธีที่ 2: ถ้าใช้ FakeUSDT ใหม่ที่มี mint function ***
+    // const usdtAmount = ethers.parseUnits("1000", 6);
+    // for (const user of users) {
+    //   await usdt.mint(user.address, usdtAmount);
+    //   await usdt.connect(user).approve(await nft.getAddress(), usdtAmount);
+    // }
 
     return { nft, usdt, owner, users };
   }

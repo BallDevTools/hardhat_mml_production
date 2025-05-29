@@ -1,35 +1,52 @@
+// แก้ไข test/unit/ContractErrors.test.js แบบครบถ้วน
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 
-// ทดสอบว่า custom errors ทั้งหมดใน ContractErrors.sol สามารถถูกเรียกได้อย่างถูกต้อง
-// เราจะทดสอบโดยการทำให้เกิด error ต่างๆ ที่มีการใช้ custom errors จาก ContractErrors.sol
-
 describe("ContractErrors Unit Tests", function () {
+  // *** แก้ไขฟังก์ชัน deployFixture ให้ใช้ decimals ที่ถูกต้อง ***
   async function deployFixture() {
     const [owner, user1, user2, user3, user4, user5] = await ethers.getSigners();
     
     // Deploy FakeUSDT
     const FakeUSDT = await ethers.getContractFactory("FakeUSDT");
     const usdt = await FakeUSDT.deploy();
+    await usdt.waitForDeployment();
     
     // Deploy CryptoMembershipNFT
     const CryptoMembershipNFT = await ethers.getContractFactory("CryptoMembershipNFT");
-    const nft = await CryptoMembershipNFT.deploy(usdt.target, owner.address);
+    const nft = await CryptoMembershipNFT.deploy(await usdt.getAddress(), owner.address);
+    await nft.waitForDeployment();
     
-    // อนุมัติให้ contract ใช้ USDT
-    const initialAmount = ethers.parseEther("100");
+    // *** สำคัญ: ตรวจสอบ decimals ก่อนใช้ ***
+    const decimals = await usdt.decimals();
+    console.log(`💰 USDT decimals: ${decimals}`);
+    
+    // *** แก้ไข: ใช้ parseUnits แทน parseEther ***
+    const initialAmount = ethers.parseUnits("50", decimals); // ลดจาก 100 เป็น 50 USDT
+    
+    // *** ตรวจสอบยอดเงิน owner ก่อนโอน ***
+    const ownerBalance = await usdt.balanceOf(owner.address);
+    console.log(`👤 Owner balance: ${ethers.formatUnits(ownerBalance, decimals)} USDT`);
+    
+    // *** คำนวณจำนวนเงินที่ต้องการ ***
+    const totalNeeded = initialAmount * BigInt([user1, user2, user3, user4, user5].length);
+    console.log(`💵 Total needed: ${ethers.formatUnits(totalNeeded, decimals)} USDT`);
+    
+    if (ownerBalance < totalNeeded) {
+      throw new Error(`Insufficient balance. Owner has ${ethers.formatUnits(ownerBalance, decimals)} USDT, but needs ${ethers.formatUnits(totalNeeded, decimals)} USDT`);
+    }
     
     // แจก USDT ให้ผู้ใช้เพื่อทดสอบ
     for (const user of [user1, user2, user3, user4, user5]) {
       await usdt.transfer(user.address, initialAmount);
-      await usdt.connect(user).approve(nft.target, initialAmount);
+      await usdt.connect(user).approve(await nft.getAddress(), initialAmount);
     }
     
     // ลงทะเบียนสมาชิกสำหรับทดสอบบางกรณี
     await nft.connect(user1).registerMember(1, owner.address);
     
-    return { nft, usdt, owner, user1, user2, user3, user4, user5 };
+    return { nft, usdt, owner, user1, user2, user3, user4, user5, decimals };
   }
   
   describe("General Errors", function () {
@@ -79,20 +96,20 @@ describe("ContractErrors Unit Tests", function () {
   
   describe("Plan Errors", function () {
     it("Should revert with InvalidCycleMembers error", async function () {
-      const { nft, owner } = await loadFixture(deployFixture);
+      const { nft, owner, decimals } = await loadFixture(deployFixture);
       
       // พยายามสร้างแผนที่มี membersPerCycle ไม่เท่ากับ 4
       await expect(
-        nft.connect(owner).createPlan(ethers.parseEther("20"), "Invalid Cycle", 5)
+        nft.connect(owner).createPlan(ethers.parseUnits("20", decimals), "Invalid Cycle", 5)
       ).to.be.revertedWithCustomError(nft, "InvalidCycleMembers");
     });
     
     it("Should revert with EmptyName error", async function () {
-      const { nft, owner } = await loadFixture(deployFixture);
+      const { nft, owner, decimals } = await loadFixture(deployFixture);
       
       // พยายามสร้างแผนที่มีชื่อเป็น empty string
       await expect(
-        nft.connect(owner).createPlan(ethers.parseEther("20"), "", 4)
+        nft.connect(owner).createPlan(ethers.parseUnits("20", decimals), "", 4)
       ).to.be.revertedWithCustomError(nft, "EmptyName");
     });
     
@@ -106,11 +123,11 @@ describe("ContractErrors Unit Tests", function () {
     });
     
     it("Should revert with PriceTooLow error", async function () {
-      const { nft, owner } = await loadFixture(deployFixture);
+      const { nft, owner, decimals } = await loadFixture(deployFixture);
       
       // พยายามสร้างแผนที่มีราคาต่ำกว่าแผนก่อนหน้า
       await expect(
-        nft.connect(owner).createPlan(ethers.parseEther("0.5"), "Low Price Plan", 4)
+        nft.connect(owner).createPlan(ethers.parseUnits("0.5", decimals), "Low Price Plan", 4)
       ).to.be.revertedWithCustomError(nft, "PriceTooLow");
     });
     
@@ -118,7 +135,6 @@ describe("ContractErrors Unit Tests", function () {
       const { nft, owner } = await loadFixture(deployFixture);
       
       // ใช้ setPlanStatus เพื่อเรียกใช้ InvalidPlanID โดยตรง
-      // แทนการใช้ upgradePlan ที่มี preventFrontRunning modifier
       await expect(
         nft.connect(owner).setPlanStatus(100, true)
       ).to.be.revertedWithCustomError(nft, "InvalidPlanID");
@@ -232,40 +248,40 @@ describe("ContractErrors Unit Tests", function () {
   
   describe("Finance Errors", function () {
     it("Should revert with LowOwnerBalance error", async function () {
-      const { nft, owner } = await loadFixture(deployFixture);
+      const { nft, owner, decimals } = await loadFixture(deployFixture);
       
       // พยายามถอนเงินมากกว่ายอดคงเหลือของ owner
       await expect(
-        nft.connect(owner).withdrawOwnerBalance(ethers.parseEther("1000"))
+        nft.connect(owner).withdrawOwnerBalance(ethers.parseUnits("1000", decimals))
       ).to.be.revertedWithCustomError(nft, "LowOwnerBalance");
     });
     
     it("Should revert with LowFeeBalance error", async function () {
-      const { nft, owner } = await loadFixture(deployFixture);
+      const { nft, owner, decimals } = await loadFixture(deployFixture);
       
       // พยายามถอนเงินมากกว่ายอดคงเหลือของค่าธรรมเนียม
       await expect(
-        nft.connect(owner).withdrawFeeSystemBalance(ethers.parseEther("1000"))
+        nft.connect(owner).withdrawFeeSystemBalance(ethers.parseUnits("1000", decimals))
       ).to.be.revertedWithCustomError(nft, "LowFeeBalance");
     });
     
     it("Should revert with LowFundBalance error", async function () {
-      const { nft, owner } = await loadFixture(deployFixture);
+      const { nft, owner, decimals } = await loadFixture(deployFixture);
       
       // พยายามถอนเงินมากกว่ายอดคงเหลือของกองทุน
       await expect(
-        nft.connect(owner).withdrawFundBalance(ethers.parseEther("1000"))
+        nft.connect(owner).withdrawFundBalance(ethers.parseUnits("1000", decimals))
       ).to.be.revertedWithCustomError(nft, "LowFundBalance");
     });
     
     it("Should revert with InvalidRequest error in batch withdrawal", async function () {
-      const { nft, owner } = await loadFixture(deployFixture);
+      const { nft, owner, decimals } = await loadFixture(deployFixture);
       
       // สร้าง withdrawal request ที่ไม่ถูกต้อง (recipient เป็น address 0)
       const invalidRequests = [
         {
           recipient: ethers.ZeroAddress,
-          amount: ethers.parseEther("1"),
+          amount: ethers.parseUnits("1", decimals),
           balanceType: 0
         }
       ];
