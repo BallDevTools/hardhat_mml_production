@@ -19,6 +19,7 @@ library FinanceLib {
             return (60, 40);
         }
     }
+
     function distributeFunds(uint256 _amount, uint256 _currentPlanId)
         internal
         pure

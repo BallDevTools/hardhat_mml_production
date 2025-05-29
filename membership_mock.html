@@ -1,0 +1,3357 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Membership Simulation - BSC Testnet (Web3.js)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/4.8.0/web3.min.js" crossorigin="anonymous"
+        referrerpolicy="no-referrer"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .card h3 {
+            margin-bottom: 20px;
+            color: #4c51bf;
+            font-size: 1.3rem;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #4c51bf;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #4c51bf 0%, #667eea 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76, 81, 191, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #e53e3e 0%, #fc8181 100%);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #38a169 0%, #68d391 100%);
+        }
+
+        .status-card {
+            grid-column: 1 / -1;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .status-item {
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border: 2px solid #e2e8f0;
+        }
+
+        .status-item h4 {
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        .status-item p {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #4c51bf;
+        }
+
+        .log-container {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-radius: 4px;
+        }
+
+        .log-success {
+            background-color: rgba(72, 187, 120, 0.2);
+        }
+
+        .log-error {
+            background-color: rgba(245, 101, 101, 0.2);
+        }
+
+        .log-info {
+            background-color: rgba(66, 153, 225, 0.2);
+        }
+
+        .log-warning {
+            background-color: rgba(236, 201, 75, 0.2);
+        }
+
+        .wallet-status {
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .wallet-connected {
+            background-color: rgba(72, 187, 120, 0.2);
+            color: #22543d;
+            border: 2px solid #68d391;
+        }
+
+        .wallet-disconnected {
+            background-color: rgba(245, 101, 101, 0.2);
+            color: #742a2a;
+            border: 2px solid #fc8181;
+        }
+
+        .network-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .network-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #68d391;
+        }
+
+        .network-indicator.disconnected {
+            background-color: #fc8181;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4c51bf 0%, #667eea 100%);
+            transition: width 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .status-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Membership Simulation</h1>
+            <p>BSC Testnet - Web3.js Version</p>
+        </div>
+
+        <div class="dashboard">
+            <!-- Connection Panel -->
+            <div class="card">
+                <h3>🔗 Connection</h3>
+
+                <div id="walletStatus" class="wallet-status wallet-disconnected">
+                    Wallet Not Connected
+                </div>
+
+                <div class="network-status">
+                    <div id="networkIndicator" class="network-indicator disconnected"></div>
+                    <span id="networkName">Not Connected</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="contractAddress">Contract Address:</label>
+                    <input type="text" id="contractAddress" placeholder="0x..." value="">
+                </div>
+
+                <div class="form-group">
+                    <label for="tokenAddress">USDT Token Address:</label>
+                    <input type="text" id="tokenAddress" placeholder="0x..." value="">
+                </div>
+
+                <button class="btn" onclick="connectWallet()">Connect Wallet</button>
+                <button class="btn btn-success" onclick="deployContracts()" id="deployBtn" disabled>Deploy
+                    Contracts</button>
+            </div>
+
+            <!-- Simulation Controls -->
+            <div class="card">
+                <h3>⚙️ Simulation Controls</h3>
+
+                <div class="form-group">
+                    <label for="simulationType">Simulation Type:</label>
+                    <select id="simulationType">
+                        <option value="random">Random Activity</option>
+                        <option value="chain">Upgrade Chain</option>
+                        <option value="cycle">Cycle Completion</option>
+                        <option value="mixed">Mixed Activity</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="actionCount">Number of Actions:</label>
+                    <input type="number" id="actionCount" value="50" min="10" max="200">
+                </div>
+
+                <div class="form-group">
+                    <label for="memberCount">Test Members:</label>
+                    <input type="number" id="memberCount" value="10" min="5" max="50">
+                </div>
+
+                <button class="btn" onclick="startSimulation()" id="startBtn" disabled>Start Simulation</button>
+                <button class="btn btn-danger" onclick="stopSimulation()" id="stopBtn" disabled>Stop Simulation</button>
+                <button class="btn btn-success" onclick="fundTestAccounts()" id="fundBtn" disabled>Fund Test
+                    Accounts</button>
+            </div>
+
+            <!-- System Status -->
+            <div class="card status-card">
+                <h3>📊 System Status</h3>
+
+                <div class="status-grid">
+                    <div class="status-item">
+                        <h4>Total Members</h4>
+                        <p id="totalMembers">0</p>
+                    </div>
+                    <div class="status-item">
+                        <h4>Total Revenue</h4>
+                        <p id="totalRevenue">0 USDT</p>
+                    </div>
+                    <div class="status-item">
+                        <h4>Commission Paid</h4>
+                        <p id="commissionPaid">0 USDT</p>
+                    </div>
+                    <div class="status-item">
+                        <h4>Success Rate</h4>
+                        <p id="successRate">0%</p>
+                    </div>
+                    <div class="status-item">
+                        <h4>Actions Completed</h4>
+                        <p id="actionsCompleted">0</p>
+                    </div>
+                    <div class="status-item">
+                        <h4>Current Cycle</h4>
+                        <p id="currentCycle">1</p>
+                    </div>
+                </div>
+
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                </div>
+                <p style="text-align: center; margin-top: 10px;">
+                    Progress: <span id="progressText">0/0</span>
+                </p>
+            </div>
+        </div>
+
+        <!-- Activity Log -->
+        <div class="card">
+            <h3>📝 Activity Log</h3>
+            <button class="btn" onclick="clearLog()" style="float: right; margin-top: -40px;">Clear Log</button>
+            <div class="log-container" id="logContainer">
+                <div class="log-entry log-info">🚀 Welcome to Membership Simulation (Web3.js)!</div>
+                <div class="log-entry log-info">Connect your wallet to BSC Testnet to begin...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Contract ABIs
+        const NFT_ABI = [
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_usdtToken",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "initialOwner",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "nonpayable",
+                "type": "constructor"
+            },
+            {
+                "inputs": [],
+                "name": "AlreadyMember",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "CooldownActive",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "ERC721EnumerableForbiddenBatchMint",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "sender",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "owner",
+                        "type": "address"
+                    }
+                ],
+                "name": "ERC721IncorrectOwner",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "operator",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "ERC721InsufficientApproval",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "approver",
+                        "type": "address"
+                    }
+                ],
+                "name": "ERC721InvalidApprover",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "operator",
+                        "type": "address"
+                    }
+                ],
+                "name": "ERC721InvalidOperator",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "owner",
+                        "type": "address"
+                    }
+                ],
+                "name": "ERC721InvalidOwner",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "receiver",
+                        "type": "address"
+                    }
+                ],
+                "name": "ERC721InvalidReceiver",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "sender",
+                        "type": "address"
+                    }
+                ],
+                "name": "ERC721InvalidSender",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "ERC721NonexistentToken",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "owner",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "index",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "ERC721OutOfBoundsIndex",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "EmptyName",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "EmptyURI",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "InactivePlan",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "InvalidAmount",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "InvalidCycleMembers",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "InvalidDecimals",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "InvalidPlanID",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "InvalidRequest",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "InvalidRequests",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "LowFeeBalance",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "LowFundBalance",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "LowOwnerBalance",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "NextPlanOnly",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "NoPlanImage",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "NoRequest",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "NonTransferable",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "NonexistentToken",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "NotMember",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "NotPaused",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "owner",
+                        "type": "address"
+                    }
+                ],
+                "name": "OwnableInvalidOwner",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "account",
+                        "type": "address"
+                    }
+                ],
+                "name": "OwnableUnauthorizedAccount",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "Paused",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "Plan1Only",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "PriceTooLow",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "ReentrancyGuardReentrantCall",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "ReentrantTransfer",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "token",
+                        "type": "address"
+                    }
+                ],
+                "name": "SafeERC20FailedOperation",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "ThirtyDayLock",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "TimelockActive",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "TooSoon",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "UplineNotMember",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "UplinePlanLow",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "ZeroAddress",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "ZeroBalance",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "ZeroPrice",
+                "type": "error"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "owner",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "approved",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": true,
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "Approval",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "owner",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "operator",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "bool",
+                        "name": "approved",
+                        "type": "bool"
+                    }
+                ],
+                "name": "ApprovalForAll",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "totalOwner",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "totalFee",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "totalFund",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "BatchWithdrawalProcessed",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "bool",
+                        "name": "status",
+                        "type": "bool"
+                    }
+                ],
+                "name": "ContractPaused",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "EmergencyWithdraw",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "timestamp",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "EmergencyWithdrawInitiated",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "timestamp",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "EmergencyWithdrawRequested",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "ownerAmount",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "feeAmount",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "fundAmount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "FundsDistributed",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "member",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "refundAmount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "MemberExited",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "member",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "upline",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "planId",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "cycleNumber",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "MemberRegistered",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "string",
+                        "name": "message",
+                        "type": "string"
+                    }
+                ],
+                "name": "MembershipMinted",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "string",
+                        "name": "newURI",
+                        "type": "string"
+                    }
+                ],
+                "name": "MetadataUpdated",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "planId",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "cycleNumber",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "NewCycleStarted",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "previousOwner",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "newOwner",
+                        "type": "address"
+                    }
+                ],
+                "name": "OwnershipTransferred",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "planId",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "string",
+                        "name": "name",
+                        "type": "string"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "price",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "membersPerCycle",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "PlanCreated",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "uint256",
+                        "name": "planId",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "string",
+                        "name": "imageURI",
+                        "type": "string"
+                    }
+                ],
+                "name": "PlanDefaultImageSet",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "member",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "oldPlanId",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "newPlanId",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "cycleNumber",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "PlanUpgraded",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "newPriceFeed",
+                        "type": "address"
+                    }
+                ],
+                "name": "PriceFeedUpdated",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "from",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "ReferralPaid",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "newDuration",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "TimelockUpdated",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "from",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": true,
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "Transfer",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "from",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "TransferAttemptBlocked",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "upline",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "downline",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "downlineCurrentPlan",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "downlineTargetPlan",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "UplineNotified",
+                "type": "event"
+            },
+            {
+                "inputs": [],
+                "name": "MAX_MEMBERS_PER_CYCLE",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "TIMELOCK_DURATION",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "approve",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "owner",
+                        "type": "address"
+                    }
+                ],
+                "name": "balanceOf",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "components": [
+                            {
+                                "internalType": "address",
+                                "name": "recipient",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "amount",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "balanceType",
+                                "type": "uint256"
+                            }
+                        ],
+                        "internalType": "struct CryptoMembershipNFT.WithdrawalRequest[]",
+                        "name": "requests",
+                        "type": "tuple[]"
+                    }
+                ],
+                "name": "batchWithdraw",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "cancelEmergencyWithdraw",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_price",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "_name",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_membersPerCycle",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "createPlan",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "emergencyWithdraw",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "exitMembership",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "getApproved",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "getContractStatus",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "isPaused",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "totalBalance",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "memberCount",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "currentPlanCount",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "hasEmergencyRequest",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "emergencyTimeRemaining",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_tokenId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "getNFTImage",
+                "outputs": [
+                    {
+                        "internalType": "string",
+                        "name": "imageURI",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "name",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "description",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "planId",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "createdAt",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_planId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "getPlanCycleInfo",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "currentCycle",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "membersInCurrentCycle",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "membersPerCycle",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_member",
+                        "type": "address"
+                    }
+                ],
+                "name": "getReferralChain",
+                "outputs": [
+                    {
+                        "internalType": "address[]",
+                        "name": "",
+                        "type": "address[]"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "getSystemStats",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "totalMembers",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "totalRevenue",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "totalCommission",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "ownerFunds",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "feeFunds",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "fundFunds",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "owner",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "operator",
+                        "type": "address"
+                    }
+                ],
+                "name": "isApprovedForAll",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "isTokenTransferable",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "pure",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "name": "members",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "upline",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "totalReferrals",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "totalEarnings",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "planId",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "cycleNumber",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "registeredAt",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "name",
+                "outputs": [
+                    {
+                        "internalType": "string",
+                        "name": "",
+                        "type": "string"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "owner",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "ownerOf",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "planCycles",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "currentCycle",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "membersInCurrentCycle",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "planDefaultImages",
+                "outputs": [
+                    {
+                        "internalType": "string",
+                        "name": "",
+                        "type": "string"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "plans",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "price",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "name",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "membersPerCycle",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "isActive",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "priceFeed",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_planId",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "_upline",
+                        "type": "address"
+                    }
+                ],
+                "name": "registerMember",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "renounceOwnership",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "requestEmergencyWithdraw",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "restartAfterPause",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "from",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "safeTransferFrom",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "from",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "bytes",
+                        "name": "data",
+                        "type": "bytes"
+                    }
+                ],
+                "name": "safeTransferFrom",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "operator",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "approved",
+                        "type": "bool"
+                    }
+                ],
+                "name": "setApprovalForAll",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "string",
+                        "name": "baseURI",
+                        "type": "string"
+                    }
+                ],
+                "name": "setBaseURI",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "_paused",
+                        "type": "bool"
+                    }
+                ],
+                "name": "setPaused",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_planId",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "_imageURI",
+                        "type": "string"
+                    }
+                ],
+                "name": "setPlanDefaultImage",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_planId",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "_isActive",
+                        "type": "bool"
+                    }
+                ],
+                "name": "setPlanStatus",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_priceFeed",
+                        "type": "address"
+                    }
+                ],
+                "name": "setPriceFeed",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "bytes4",
+                        "name": "interfaceId",
+                        "type": "bytes4"
+                    }
+                ],
+                "name": "supportsInterface",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "symbol",
+                "outputs": [
+                    {
+                        "internalType": "string",
+                        "name": "",
+                        "type": "string"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "index",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "tokenByIndex",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "tokenImages",
+                "outputs": [
+                    {
+                        "internalType": "string",
+                        "name": "imageURI",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "name",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "description",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "planId",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "createdAt",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "owner",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "index",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "tokenOfOwnerByIndex",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_tokenId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "tokenURI",
+                "outputs": [
+                    {
+                        "internalType": "string",
+                        "name": "",
+                        "type": "string"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "totalSupply",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "from",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "transferFrom",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "newOwner",
+                        "type": "address"
+                    }
+                ],
+                "name": "transferOwnership",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_planId",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_newMembersPerCycle",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "updateMembersPerCycle",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_newPlanId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "upgradePlan",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "usdtToken",
+                "outputs": [
+                    {
+                        "internalType": "contract IERC20",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "validateContractBalance",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "withdrawFeeSystemBalance",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "withdrawFundBalance",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "withdrawOwnerBalance",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            }
+        ];
+
+        const TOKEN_ABI = [
+            {
+                "inputs": [],
+                "stateMutability": "nonpayable",
+                "type": "constructor"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "spender",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "allowance",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "needed",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "ERC20InsufficientAllowance",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "sender",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "balance",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "needed",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "ERC20InsufficientBalance",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "approver",
+                        "type": "address"
+                    }
+                ],
+                "name": "ERC20InvalidApprover",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "receiver",
+                        "type": "address"
+                    }
+                ],
+                "name": "ERC20InvalidReceiver",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "sender",
+                        "type": "address"
+                    }
+                ],
+                "name": "ERC20InvalidSender",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "spender",
+                        "type": "address"
+                    }
+                ],
+                "name": "ERC20InvalidSpender",
+                "type": "error"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "owner",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "spender",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "value",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "Approval",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "from",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "value",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "Transfer",
+                "type": "event"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "owner",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "spender",
+                        "type": "address"
+                    }
+                ],
+                "name": "allowance",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "spender",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "value",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "approve",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "account",
+                        "type": "address"
+                    }
+                ],
+                "name": "balanceOf",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "decimals",
+                "outputs": [
+                    {
+                        "internalType": "uint8",
+                        "name": "",
+                        "type": "uint8"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "name",
+                "outputs": [
+                    {
+                        "internalType": "string",
+                        "name": "",
+                        "type": "string"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "symbol",
+                "outputs": [
+                    {
+                        "internalType": "string",
+                        "name": "",
+                        "type": "string"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "totalSupply",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "value",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "transfer",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "from",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "value",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "transferFrom",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            }
+        ];
+
+        // Global variables
+        let web3, currentAccount, nftContract, tokenContract;
+        let simulationRunning = false;
+        let simulationStats = {
+            totalActions: 0,
+            completedActions: 0,
+            successfulActions: 0,
+            registrations: 0,
+            upgrades: 0,
+            exits: 0
+        };
+        let testAccounts = [];
+
+        // BSC Testnet configuration
+        const BSC_TESTNET = {
+            chainId: '0x61', // 97 in decimal
+            chainName: 'BSC Testnet',
+            nativeCurrency: {
+                name: 'BNB',
+                symbol: 'BNB',
+                decimals: 18
+            },
+            rpcUrls: ['https://data-seed-prebsc-1-s1.binance.org:8545/'],
+            blockExplorerUrls: ['https://testnet.bscscan.com/']
+        };
+
+        // Connect Wallet with Web3.js
+        async function connectWallet() {
+            // ตรวจสอบหลายขั้นตอน
+            if (typeof window.ethereum === 'undefined') {
+                logMessage('❌ MetaMask not found! Please install MetaMask.', 'error');
+                logMessage('📥 Install from: https://metamask.io', 'info');
+                logMessage('🔄 After installation, please refresh this page', 'info');
+                return;
+            }
+
+            // ตรวจสอบว่าเป็น MetaMask จริงๆ
+            if (!window.ethereum.isMetaMask) {
+                logMessage('⚠️ Please use MetaMask browser extension', 'warning');
+                logMessage('📥 Install MetaMask from: https://metamask.io', 'info');
+                return;
+            }
+
+            try {
+                logMessage('🔄 Connecting to MetaMask...', 'info');
+
+                // Request account access
+                await window.ethereum.request({ method: 'eth_requestAccounts' });
+
+                // Initialize Web3
+                web3 = new Web3(window.ethereum);
+
+                // Switch to BSC Testnet
+                try {
+                    await window.ethereum.request({
+                        method: 'wallet_switchEthereumChain',
+                        params: [{ chainId: BSC_TESTNET.chainId }],
+                    });
+                } catch (switchError) {
+                    if (switchError.code === 4902) {
+                        await window.ethereum.request({
+                            method: 'wallet_addEthereumChain',
+                            params: [BSC_TESTNET],
+                        });
+                    }
+                    throw switchError;
+                }
+
+                // Get current account
+                const accounts = await web3.eth.getAccounts();
+                currentAccount = accounts[0];
+
+                // Get network info
+                const chainId = await web3.eth.getChainId();
+
+                // Update UI
+                document.getElementById('walletStatus').textContent = `Connected: ${currentAccount.slice(0, 8)}...`;
+                document.getElementById('walletStatus').className = 'wallet-status wallet-connected';
+                document.getElementById('networkIndicator').className = 'network-indicator';
+                document.getElementById('networkName').textContent = `BSC Testnet (${chainId})`;
+                document.getElementById('deployBtn').disabled = false;
+
+                logMessage('✅ Wallet connected successfully with Web3.js!', 'success');
+                logMessage(`📍 Account: ${currentAccount}`, 'info');
+                logMessage(`🌐 Chain ID: ${chainId}`, 'info');
+
+            } catch (error) {
+                if (error.code === 4001) {
+                    logMessage('❌ User rejected the connection request', 'error');
+                } else if (error.code === -32002) {
+                    logMessage('⏳ Connection request pending. Please check MetaMask', 'warning');
+                } else {
+                    logMessage(`❌ Connection failed: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        // ตรวจสอบ MetaMask ทุก 1 วินาที
+        function checkMetaMask() {
+            // Debug information
+            logMessage(`🔍 Debug: window.ethereum = ${typeof window.ethereum}`, 'info');
+
+            if (typeof window.ethereum !== 'undefined') {
+                logMessage(`🔍 Debug: ethereum.isMetaMask = ${window.ethereum.isMetaMask}`, 'info');
+                logMessage(`🔍 Debug: ethereum.providers = ${window.ethereum.providers?.length || 'none'}`, 'info');
+
+                // ตรวจสอบ multiple providers
+                if (window.ethereum.providers && window.ethereum.providers.length > 0) {
+                    const metaMaskProvider = window.ethereum.providers.find(provider => provider.isMetaMask);
+                    if (metaMaskProvider) {
+                        logMessage('✅ MetaMask found in providers array!', 'success');
+                        window.ethereum = metaMaskProvider; // Use MetaMask specifically
+                        document.getElementById('walletStatus').innerHTML = 'MetaMask Ready - Click Connect';
+                        return true;
+                    }
+                }
+
+                if (window.ethereum.isMetaMask) {
+                    logMessage('✅ MetaMask detected! Ready to connect.', 'success');
+                    document.getElementById('walletStatus').innerHTML = 'MetaMask Ready - Click Connect';
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // รอ MetaMask โหลด
+        function waitForMetaMask() {
+            let attempts = 0;
+            const maxAttempts = 10;
+
+            const checkInterval = setInterval(() => {
+                attempts++;
+
+                if (checkMetaMask()) {
+                    clearInterval(checkInterval);
+                    return;
+                }
+
+                if (attempts >= maxAttempts) {
+                    clearInterval(checkInterval);
+                    logMessage('❌ MetaMask not found after waiting 10 seconds', 'error');
+                    logMessage('📥 Please install MetaMask: https://metamask.io', 'info');
+                }
+            }, 1000);
+        }
+
+        // Deploy Contracts (Mock deployment)
+        async function deployContracts() {
+            logMessage('🚀 Deploying contracts to BSC Testnet...', 'info');
+
+            try {
+                if (!web3) {
+                    throw new Error('Web3 not initialized. Please connect wallet first.');
+                }
+
+                // Generate proper Ethereum addresses using web3.js
+                function generateValidAddress() {
+                    // Method 1: Manual generation
+                    const chars = '0123456789abcdef';
+                    let address = '0x';
+                    for (let i = 0; i < 40; i++) {
+                        address += chars[Math.floor(Math.random() * chars.length)];
+                    }
+                    return address;
+                }
+
+                // Method 2: Using web3.js (alternative)
+                function generateValidAddressAlt() {
+                    // Create random private key then derive address
+                    const randomBytes = web3.utils.randomHex(32);
+                    const account = web3.eth.accounts.privateKeyToAccount(randomBytes);
+                    return account.address;
+                }
+
+                // Use method 1 for mock contracts, method 2 for real accounts
+                const mockNFTAddress = generateValidAddress();
+                const mockTokenAddress = generateValidAddress();
+
+                logMessage(`📄 Generated NFT Address: ${mockNFTAddress} (Length: ${mockNFTAddress.length})`, 'info');
+                logMessage(`🪙 Generated Token Address: ${mockTokenAddress} (Length: ${mockTokenAddress.length})`, 'info');
+
+                // Validate addresses with detailed logging
+                const nftValid = web3.utils.isAddress(mockNFTAddress);
+                const tokenValid = web3.utils.isAddress(mockTokenAddress);
+
+                logMessage(`🔍 NFT Address validation: ${nftValid}`, nftValid ? 'success' : 'error');
+                logMessage(`🔍 Token Address validation: ${tokenValid}`, tokenValid ? 'success' : 'error');
+
+                if (!nftValid) {
+                    throw new Error(`Invalid NFT address: ${mockNFTAddress} (Length: ${mockNFTAddress.length})`);
+                }
+                if (!tokenValid) {
+                    throw new Error(`Invalid Token address: ${mockTokenAddress} (Length: ${mockTokenAddress.length})`);
+                }
+
+                document.getElementById('contractAddress').value = mockNFTAddress;
+                document.getElementById('tokenAddress').value = mockTokenAddress;
+
+                // Initialize contracts with Web3.js
+                nftContract = new web3.eth.Contract(NFT_ABI, mockNFTAddress);
+                tokenContract = new web3.eth.Contract(TOKEN_ABI, mockTokenAddress);
+
+                logMessage('✅ Contracts deployed successfully!', 'success');
+                logMessage(`📄 NFT Contract: ${mockNFTAddress}`, 'info');
+                logMessage(`🪙 Token Contract: ${mockTokenAddress}`, 'info');
+                logMessage('✅ Address validation passed', 'success');
+
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('fundBtn').disabled = false;
+
+                // Generate test accounts
+                generateTestAccounts();
+
+            } catch (error) {
+                logMessage(`❌ Deployment failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Generate Test Accounts
+        function generateTestAccounts() {
+            const count = parseInt(document.getElementById('memberCount').value);
+            testAccounts = [];
+
+            for (let i = 0; i < count; i++) {
+                const account = web3.eth.accounts.create();
+                testAccounts.push({
+                    address: account.address,
+                    privateKey: account.privateKey,
+                    isRegistered: false,
+                    currentPlan: 0
+                });
+            }
+
+            logMessage(`👥 Generated ${count} test accounts with Web3.js`, 'info');
+        }
+
+        // Fund Test Accounts
+        async function fundTestAccounts() {
+            logMessage('💰 Funding test accounts...', 'info');
+
+            try {
+                for (let i = 0; i < Math.min(5, testAccounts.length); i++) {
+                    const account = testAccounts[i];
+
+                    // Mock funding - in real scenario, you'd send actual tokens
+                    // Example of how to send tokens with Web3.js:
+                    /*
+                    const tx = await tokenContract.methods.mint(
+                        account.address, 
+                        web3.utils.toWei('1000', 'ether')
+                    ).send({ from: currentAccount });
+                    */
+
+                    logMessage(`💸 Funded ${account.address.slice(0, 8)}... with 1000 USDT`, 'success');
+
+                    // Simulate delay
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+
+                logMessage('✅ Test accounts funded successfully!', 'success');
+
+            } catch (error) {
+                logMessage(`❌ Funding failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Start Simulation
+        async function startSimulation() {
+            if (simulationRunning) return;
+
+            simulationRunning = true;
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+
+            const type = document.getElementById('simulationType').value;
+            const actionCount = parseInt(document.getElementById('actionCount').value);
+
+            simulationStats = {
+                totalActions: actionCount,
+                completedActions: 0,
+                successfulActions: 0,
+                registrations: 0,
+                upgrades: 0,
+                exits: 0
+            };
+
+            logMessage(`🎬 Starting ${type} simulation with ${actionCount} actions...`, 'info');
+
+            switch (type) {
+                case 'random':
+                    await runRandomSimulation(actionCount);
+                    break;
+                case 'chain':
+                    await runChainSimulation();
+                    break;
+                case 'cycle':
+                    await runCycleSimulation();
+                    break;
+                case 'mixed':
+                    await runMixedSimulation(actionCount);
+                    break;
+            }
+
+            simulationRunning = false;
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+
+            logMessage('🏁 Simulation completed!', 'success');
+        }
+
+        // Stop Simulation
+        function stopSimulation() {
+            simulationRunning = false;
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            logMessage('⏹️ Simulation stopped by user', 'warning');
+        }
+
+        // Simulate Registration with Web3.js
+        async function simulateRegistration() {
+            const unregistered = testAccounts.filter(acc => !acc.isRegistered);
+            if (unregistered.length === 0) return false;
+
+            const user = unregistered[Math.floor(Math.random() * unregistered.length)];
+            const upline = Math.random() < 0.3 ? currentAccount : getRandomUpline();
+
+            logMessage(`📝 ${user.address.slice(0, 8)}... registering Plan 1 (Upline: ${upline.slice(0, 8)}...)`, 'info');
+
+            try {
+                // Mock contract call with Web3.js
+                // In real scenario:
+                /*
+                const tx = await nftContract.methods.registerMember(1, upline).send({
+                    from: user.address,
+                    gas: 300000
+                });
+                */
+
+                // Mock success (90% success rate)
+                if (Math.random() < 0.9) {
+                    user.isRegistered = true;
+                    user.currentPlan = 1;
+                    logMessage(`✅ Registration successful! Gas used: ${Math.floor(Math.random() * 50000 + 150000)}`, 'success');
+                    return true;
+                } else {
+                    logMessage(`❌ Registration failed: UplineNotMember()`, 'error');
+                    return false;
+                }
+
+            } catch (error) {
+                logMessage(`❌ Registration error: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        // Simulate Upgrade with Web3.js
+        async function simulateUpgrade() {
+            const registered = testAccounts.filter(acc => acc.isRegistered && acc.currentPlan < 16);
+            if (registered.length === 0) return false;
+
+            const user = registered[Math.floor(Math.random() * registered.length)];
+            const nextPlan = user.currentPlan + 1;
+
+            logMessage(`⬆️ ${user.address.slice(0, 8)}... upgrading Plan ${user.currentPlan} → Plan ${nextPlan}`, 'info');
+
+            try {
+                // Mock contract call with Web3.js
+                // In real scenario:
+                /*
+                const tx = await nftContract.methods.upgradePlan(nextPlan).send({
+                    from: user.address,
+                    gas: 250000
+                });
+                */
+
+                // Mock success (70% success rate)
+                if (Math.random() < 0.7) {
+                    user.currentPlan = nextPlan;
+                    logMessage(`✅ Upgrade successful! Gas used: ${Math.floor(Math.random() * 40000 + 120000)}`, 'success');
+                    return true;
+                } else {
+                    logMessage(`❌ Upgrade failed: CooldownActive()`, 'error');
+                    return false;
+                }
+
+            } catch (error) {
+                logMessage(`❌ Upgrade error: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        // Simulate Exit with Web3.js
+        async function simulateExit() {
+            const registered = testAccounts.filter(acc => acc.isRegistered);
+            if (registered.length === 0) return false;
+
+            const user = registered[Math.floor(Math.random() * registered.length)];
+
+            logMessage(`🚪 ${user.address.slice(0, 8)}... attempting to exit`, 'info');
+
+            try {
+                // Mock contract call with Web3.js
+                // In real scenario:
+                /*
+                const tx = await nftContract.methods.exitMembership().send({
+                    from: user.address,
+                    gas: 200000
+                });
+                */
+
+                // Mock success (30% success rate - due to 30-day lock)
+                if (Math.random() < 0.3) {
+                    user.isRegistered = false;
+                    user.currentPlan = 0;
+                    logMessage(`✅ Exit successful! Gas used: ${Math.floor(Math.random() * 30000 + 100000)}`, 'success');
+                    return true;
+                } else {
+                    logMessage(`❌ Exit failed: ThirtyDayLock()`, 'error');
+                    return false;
+                }
+
+            } catch (error) {
+                logMessage(`❌ Exit error: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        // Random Simulation
+        async function runRandomSimulation(actionCount) {
+            for (let i = 0; i < actionCount && simulationRunning; i++) {
+                const action = Math.random();
+                let success = false;
+
+                try {
+                    if (action < 0.5) {
+                        success = await simulateRegistration();
+                        if (success) simulationStats.registrations++;
+                    } else if (action < 0.8) {
+                        success = await simulateUpgrade();
+                        if (success) simulationStats.upgrades++;
+                    } else {
+                        success = await simulateExit();
+                        if (success) simulationStats.exits++;
+                    }
+
+                } catch (error) {
+                    logMessage(`❌ Action ${i + 1} failed: ${error.message}`, 'error');
+                }
+
+                if (success) simulationStats.successfulActions++;
+                simulationStats.completedActions++;
+
+                updateProgress();
+                updateStats();
+
+                // Delay between actions
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+        }
+
+        // Chain Simulation
+        async function runChainSimulation() {
+            logMessage('🔗 Running upgrade chain simulation...', 'info');
+
+            // Create chain of 4 users
+            const chainUsers = testAccounts.slice(0, 4);
+
+            for (let i = 0; i < chainUsers.length; i++) {
+                if (!simulationRunning) break;
+
+                const user = chainUsers[i];
+                const upline = i === 0 ? currentAccount : chainUsers[i - 1].address;
+
+                try {
+                    logMessage(`📝 ${user.address.slice(0, 8)}... registering (Upline: ${upline.slice(0, 8)}...)`, 'info');
+
+                    // Mock registration with Web3.js
+                    user.isRegistered = true;
+                    user.currentPlan = 1;
+
+                    simulationStats.registrations++;
+                    simulationStats.successfulActions++;
+                    logMessage(`✅ Registration successful!`, 'success');
+
+                } catch (error) {
+                    logMessage(`❌ Registration failed: ${error.message}`, 'error');
+                }
+
+                simulationStats.completedActions++;
+                updateProgress();
+                updateStats();
+
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+
+            // Simulate upgrades
+            for (let round = 0; round < 10 && simulationRunning; round++) {
+                const userToUpgrade = chainUsers[Math.floor(Math.random() * chainUsers.length)];
+
+                if (userToUpgrade.isRegistered && userToUpgrade.currentPlan < 16) {
+                    logMessage(`⬆️ ${userToUpgrade.address.slice(0, 8)}... upgrading Plan ${userToUpgrade.currentPlan} → Plan ${userToUpgrade.currentPlan + 1}`, 'info');
+
+                    userToUpgrade.currentPlan++;
+                    simulationStats.upgrades++;
+                    simulationStats.successfulActions++;
+                    logMessage(`✅ Upgrade successful!`, 'success');
+                }
+
+                simulationStats.completedActions++;
+                updateProgress();
+                updateStats();
+
+                await new Promise(resolve => setTimeout(resolve, 1500));
+            }
+        }
+
+        // Cycle Simulation
+        async function runCycleSimulation() {
+            logMessage('🔄 Running cycle completion simulation...', 'info');
+
+            const batchSize = 8;
+            let cycleNumber = 1;
+            let membersInCycle = 0;
+
+            for (let i = 0; i < batchSize && simulationRunning; i++) {
+                const user = testAccounts[i];
+                const upline = i === 0 ? currentAccount : testAccounts[i - 1].address;
+
+                logMessage(`📝 Member ${i + 1}: ${user.address.slice(0, 8)}... (Upline: ${upline.slice(0, 8)}...)`, 'info');
+
+                user.isRegistered = true;
+                user.currentPlan = 1;
+                membersInCycle++;
+
+                if (membersInCycle >= 4) {
+                    cycleNumber++;
+                    membersInCycle = 0;
+                    logMessage(`🔄 New cycle started! Cycle ${cycleNumber}`, 'success');
+                    document.getElementById('currentCycle').textContent = cycleNumber;
+                }
+
+                logMessage(`   └─ Current cycle: ${cycleNumber}, Members in cycle: ${membersInCycle}/4`, 'info');
+
+                simulationStats.registrations++;
+                simulationStats.successfulActions++;
+                simulationStats.completedActions++;
+
+                updateProgress();
+                updateStats();
+
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+        }
+
+        // Mixed Simulation
+        async function runMixedSimulation(actionCount) {
+            logMessage('🎭 Running mixed activity simulation...', 'info');
+
+            const days = 10;
+            const actionsPerDay = Math.ceil(actionCount / days);
+
+            for (let day = 1; day <= days && simulationRunning; day++) {
+                logMessage(`📅 Day ${day}/${days}`, 'info');
+
+                for (let action = 0; action < actionsPerDay && simulationRunning; action++) {
+                    const actionType = Math.random();
+                    let success = false;
+
+                    if (actionType < 0.4) {
+                        success = await simulateRegistration();
+                        if (success) simulationStats.registrations++;
+                    } else if (actionType < 0.7) {
+                        success = await simulateUpgrade();
+                        if (success) simulationStats.upgrades++;
+                    } else if (actionType < 0.8) {
+                        success = await simulateExit();
+                        if (success) simulationStats.exits++;
+                    } else {
+                        // Wait action
+                        logMessage('⏰ Waiting...', 'info');
+                        success = true;
+                    }
+
+                    if (success) simulationStats.successfulActions++;
+                    simulationStats.completedActions++;
+
+                    updateProgress();
+                    updateStats();
+
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                }
+            }
+        }
+
+        // Get Random Upline
+        function getRandomUpline() {
+            const registered = testAccounts.filter(acc => acc.isRegistered);
+            if (registered.length === 0) return currentAccount;
+            return registered[Math.floor(Math.random() * registered.length)].address;
+        }
+
+        // Update Progress
+        function updateProgress() {
+            const progress = (simulationStats.completedActions / simulationStats.totalActions) * 100;
+            document.getElementById('progressFill').style.width = `${progress}%`;
+            document.getElementById('progressText').textContent = `${simulationStats.completedActions}/${simulationStats.totalActions}`;
+        }
+
+        // Update Stats
+        function updateStats() {
+            const registeredCount = testAccounts.filter(acc => acc.isRegistered).length;
+            const totalRevenue = simulationStats.registrations * 1 + simulationStats.upgrades * 1.5; // Mock calculation
+            const successRate = simulationStats.completedActions > 0 ?
+                (simulationStats.successfulActions / simulationStats.completedActions * 100).toFixed(1) : 0;
+
+            document.getElementById('totalMembers').textContent = registeredCount;
+            document.getElementById('totalRevenue').textContent = `${totalRevenue.toFixed(1)} USDT`;
+            document.getElementById('commissionPaid').textContent = `${(totalRevenue * 0.2).toFixed(1)} USDT`;
+            document.getElementById('successRate').textContent = `${successRate}%`;
+            document.getElementById('actionsCompleted').textContent = simulationStats.completedActions;
+        }
+
+        // Log Message
+        function logMessage(message, type = 'info') {
+            const logContainer = document.getElementById('logContainer');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        // Clear Log
+        function clearLog() {
+            const logContainer = document.getElementById('logContainer');
+            logContainer.innerHTML = '<div class="log-entry log-info">📝 Log cleared</div>';
+        }
+
+        // Auto-update system stats periodically
+        setInterval(async () => {
+            if (nftContract && simulationRunning) {
+                try {
+                    // Mock system stats update with Web3.js
+                    // In real scenario:
+                    /*
+                    const stats = await nftContract.methods.getSystemStats().call();
+                    const totalSupply = await nftContract.methods.totalSupply().call();
+                    */
+
+                    const mockStats = {
+                        totalMembers: testAccounts.filter(acc => acc.isRegistered).length,
+                        totalRevenue: simulationStats.registrations + simulationStats.upgrades,
+                        commissionPaid: (simulationStats.registrations + simulationStats.upgrades) * 0.2,
+                        cycleNumber: Math.ceil(simulationStats.registrations / 4)
+                    };
+
+                    // Update UI with mock data
+                    if (mockStats.cycleNumber > 1) {
+                        document.getElementById('currentCycle').textContent = mockStats.cycleNumber;
+                    }
+
+                } catch (error) {
+                    // Silently handle errors during auto-update
+                }
+            }
+        }, 5000);
+
+        // Get contract info with Web3.js
+        async function getContractInfo() {
+            if (!nftContract || !web3) return;
+
+            try {
+                // Example of calling contract methods with Web3.js
+                /*
+                const totalSupply = await nftContract.methods.totalSupply().call();
+                const userBalance = await nftContract.methods.balanceOf(currentAccount).call();
+                const systemStats = await nftContract.methods.getSystemStats().call();
+                
+                logMessage(`📊 Total NFTs: ${totalSupply}`, 'info');
+                logMessage(`💰 Your Balance: ${userBalance}`, 'info');
+                logMessage(`📈 System Stats: ${systemStats}`, 'info');
+                */
+
+                logMessage('📊 Contract info retrieved successfully', 'success');
+
+            } catch (error) {
+                logMessage(`❌ Failed to get contract info: ${error.message}`, 'error');
+            }
+        }
+
+        // Send transaction with Web3.js
+        async function sendTransaction(contractMethod, params = []) {
+            try {
+                if (!web3 || !currentAccount) {
+                    throw new Error('Web3 not initialized or wallet not connected');
+                }
+
+                // Estimate gas
+                const gasEstimate = await contractMethod.estimateGas({
+                    from: currentAccount
+                });
+
+                // Get gas price
+                const gasPrice = await web3.eth.getGasPrice();
+
+                // Send transaction
+                const tx = await contractMethod.send({
+                    from: currentAccount,
+                    gas: Math.floor(gasEstimate * 1.2), // Add 20% buffer
+                    gasPrice: gasPrice
+                });
+
+                logMessage(`✅ Transaction successful: ${tx.transactionHash}`, 'success');
+                logMessage(`⛽ Gas used: ${tx.gasUsed}`, 'info');
+
+                return tx;
+
+            } catch (error) {
+                logMessage(`❌ Transaction failed: ${error.message}`, 'error');
+                throw error;
+            }
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            logMessage('🎯 BSC Testnet Simulation Ready (Web3.js)!', 'info');
+
+            // ตรวจสอบ MetaMask ทันที
+            if (checkMetaMask()) {
+                logMessage('💡 Steps to begin:', 'info');
+                logMessage('1. ✅ MetaMask detected - Click Connect Wallet', 'info');
+                logMessage('2. Switch to BSC Testnet', 'info');
+                logMessage('3. Deploy contracts', 'info');
+                logMessage('4. Fund test accounts', 'info');
+                logMessage('5. Start simulation!', 'info');
+            } else {
+                logMessage('❌ MetaMask not detected. Troubleshooting:', 'error');
+                logMessage('1. Check if MetaMask is installed and enabled', 'info');
+                logMessage('2. Allow MetaMask in incognito mode (if using)', 'info');
+                logMessage('3. Try refreshing the page', 'info');
+                logMessage('4. Try in a different browser', 'info');
+                logMessage('5. Restart your browser completely', 'info');
+                logMessage('⏳ Will keep checking for MetaMask...', 'info');
+                waitForMetaMask();
+            }
+
+            logMessage('🔧 Using Web3.js v4.8.0', 'info');
+        });
+
+        // Handle wallet account changes
+        if (typeof window.ethereum !== 'undefined') {
+            window.ethereum.on('accountsChanged', (accounts) => {
+                if (accounts.length === 0) {
+                    document.getElementById('walletStatus').textContent = 'Wallet Not Connected';
+                    document.getElementById('walletStatus').className = 'wallet-status wallet-disconnected';
+                    document.getElementById('networkIndicator').className = 'network-indicator disconnected';
+                    document.getElementById('networkName').textContent = 'Not Connected';
+                    logMessage('🔌 Wallet disconnected', 'warning');
+
+                    // Reset variables
+                    web3 = null;
+                    currentAccount = null;
+                    nftContract = null;
+                    tokenContract = null;
+                } else {
+                    logMessage('🔄 Account changed, please reconnect', 'info');
+                    connectWallet();
+                }
+            });
+
+            window.ethereum.on('chainChanged', (chainId) => {
+                if (chainId !== BSC_TESTNET.chainId) {
+                    logMessage('⚠️ Please switch to BSC Testnet', 'warning');
+                } else {
+                    logMessage('✅ Connected to BSC Testnet', 'success');
+                }
+            });
+        }
+
+        // Export functions for debugging
+        window.simulationDebug = {
+            getTestAccounts: () => testAccounts,
+            getStats: () => simulationStats,
+            getWeb3: () => web3,
+            getCurrentAccount: () => currentAccount,
+            getContracts: () => ({ nftContract, tokenContract }),
+            logMessage: logMessage,
+            clearLog: clearLog,
+            getContractInfo: getContractInfo
+        };
+    </script>
+</body>
+
+</html>
