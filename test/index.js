@@ -10,6 +10,24 @@ require('./unit/TokenLib.test');
 require('./unit/MembershipLib.test');
 require('./unit/ContractErrors.test');
 
-// หากมีการทดสอบเพิ่มเติมในอนาคตสามารถเพิ่มได้ที่นี่
+// การทดสอบ Events
 require('./unit/CompleteEventTests.test');
+require('./unit/EventValidation.test');
+
+// การทดสอบ Integration
+require('./integration/StateConsistency.test');
+require('./integration/CommissionPayment.test');
+require('./integration/PlanUpgradeChain.test');
+
+// การทดสอบ Security
+require('./security/SecurityTests.test');
+require('./security/EmergencyWithdrawTests.test');
+
+// การทดสอบ Performance
+require('./performance/GasUsageTests.test');
+
+// การทดสอบ Validation
+require('./unit/ValidationTests.test');
+
+// การทดสอบ Simulation
 require('./simulation/MembershipSimulation.test');
