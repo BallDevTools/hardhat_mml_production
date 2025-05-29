@@ -4,6 +4,8 @@
   "description": "Crypto Membership NFT on BSC",
   "main": "index.js",
   "scripts": {
+    "test:deployed": "hardhat run scripts/test-deployed-contract.js --network bscTestnet",
+    "manage": "hardhat run scripts/manage-contract.js --network bscTestnet",
     "compile": "hardhat compile",
     "clean": "hardhat clean",
     "test": "hardhat test",

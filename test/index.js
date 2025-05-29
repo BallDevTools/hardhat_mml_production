@@ -11,3 +11,5 @@ require('./unit/MembershipLib.test');
 require('./unit/ContractErrors.test');
 
 // หากมีการทดสอบเพิ่มเติมในอนาคตสามารถเพิ่มได้ที่นี่
+require('./unit/CompleteEventTests.test');
+require('./simulation/MembershipSimulation.test');
