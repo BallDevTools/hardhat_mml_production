@@ -5,11 +5,30 @@ const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 
 describe("Plan Upgrade Chain Tests", function () {
   async function deployFixture() {
-    // ตั้งค่า environment สำหรับการทดสอบ
+    const [owner, ...users] = await ethers.getSigners();
+    
+    // Deploy fake USDT token
+    const FakeUSDT = await ethers.getContractFactory("FakeUSDT");
+    const usdt = await FakeUSDT.deploy();
+    await usdt.waitForDeployment();
+
+    // Deploy NFT contract
+    const CryptoMembershipNFT = await ethers.getContractFactory("CryptoMembershipNFT");
+    const nft = await CryptoMembershipNFT.deploy(await usdt.getAddress(), owner.address);
+    await nft.waitForDeployment();
+
+    // Mint some USDT to users for testing
+    const usdtAmount = ethers.parseUnits("1000", 6); // 1000 USDT
+    for (const user of users) {
+      await usdt.mint(user.address, usdtAmount);
+      await usdt.connect(user).approve(await nft.getAddress(), usdtAmount);
+    }
+
+    return { nft, usdt, owner, users };
   }
   
   it("Should handle complex upgrade scenarios with multiple users", async function () {
-    const { nft, owner, users } = await loadFixture(deployFixture);
+    const { nft, usdt, owner, users } = await loadFixture(deployFixture);
     
     // สร้าง chain: User A (Plan 1) -> User B (Plan 1) -> User C (Plan 1)
     await nft.connect(users[0]).registerMember(1, owner.address); // User A
