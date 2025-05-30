@@ -527,59 +527,62 @@ contract CryptoMembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
     }
 
     function _completeUpgradePlan(
-        uint256 _newPlanId,
-        uint256 oldPlanId,
-        address upline,
-        uint256 priceDifference
-    ) private {
-        MembershipLib.CycleInfo storage cycleInfo = planCycles[_newPlanId];
-        cycleInfo.membersInCurrentCycle++;
-        if (
-            cycleInfo.membersInCurrentCycle >= plans[_newPlanId].membersPerCycle
-        ) {
-            cycleInfo.currentCycle++;
-            cycleInfo.membersInCurrentCycle = 0;
-            emit NewCycleStarted(_newPlanId, cycleInfo.currentCycle);
-        }
-
-        members[msg.sender].cycleNumber = cycleInfo.currentCycle;
-        members[msg.sender].planId = _newPlanId;
-
-        uint256 tokenId = tokenOfOwnerByIndex(msg.sender, 0);
-        NFTImage storage image = tokenImages[tokenId];
-        image.planId = _newPlanId;
-        image.name = plans[_newPlanId].name;
-        image.description = string(
-            abi.encodePacked("Crypto Membership NFT - ", image.name, " Plan")
-        );
-
-        (
-            uint256 ownerShare,
-            uint256 feeShare,
-            uint256 fundShare,
-            uint256 uplineShare
-        ) = FinanceLib.distributeFunds(priceDifference, _newPlanId);
-
-        state.ownerBalance += ownerShare;
-        state.feeSystemBalance += feeShare;
-        state.fundBalance += fundShare;
-
-        if (upline != address(0) && members[upline].planId < _newPlanId) {
-            emit UplineNotified(upline, msg.sender, oldPlanId, _newPlanId);
-        }
-
-        usdtToken.safeTransferFrom(msg.sender, address(this), priceDifference);
-
-        _handleUplinePayment(upline, uplineShare);
-
-        emit FundsDistributed(ownerShare, feeShare, fundShare);
-        emit PlanUpgraded(
-            msg.sender,
-            oldPlanId,
-            _newPlanId,
-            cycleInfo.currentCycle
-        );
+    uint256 _newPlanId,
+    uint256 oldPlanId,
+    address upline,
+    uint256 priceDifference
+) private {
+    MembershipLib.CycleInfo storage cycleInfo = planCycles[_newPlanId];
+    cycleInfo.membersInCurrentCycle++;
+    if (
+        cycleInfo.membersInCurrentCycle >= plans[_newPlanId].membersPerCycle
+    ) {
+        cycleInfo.currentCycle++;
+        cycleInfo.membersInCurrentCycle = 0;
+        emit NewCycleStarted(_newPlanId, cycleInfo.currentCycle);
     }
+
+    members[msg.sender].cycleNumber = cycleInfo.currentCycle;
+    members[msg.sender].planId = _newPlanId;
+
+    uint256 tokenId = tokenOfOwnerByIndex(msg.sender, 0);
+    NFTImage storage image = tokenImages[tokenId];
+    image.planId = _newPlanId;
+    image.name = plans[_newPlanId].name;
+    image.description = string(
+        abi.encodePacked("Crypto Membership NFT - ", image.name, " Plan")
+    );
+    image.imageURI = planDefaultImages[_newPlanId];
+
+    (
+        uint256 ownerShare,
+        uint256 feeShare,
+        uint256 fundShare,
+        uint256 uplineShare
+    ) = FinanceLib.distributeFunds(priceDifference, _newPlanId);
+
+    state.ownerBalance += ownerShare;
+    state.feeSystemBalance += feeShare;
+    state.fundBalance += fundShare;
+
+    if (upline != address(0) && members[upline].planId < _newPlanId) {
+        emit UplineNotified(upline, msg.sender, oldPlanId, _newPlanId);
+    }
+
+    usdtToken.safeTransferFrom(msg.sender, address(this), priceDifference);
+
+    _handleUplinePayment(upline, uplineShare);
+
+    emit FundsDistributed(ownerShare, feeShare, fundShare);
+    emit PlanUpgraded(
+        msg.sender,
+        oldPlanId,
+        _newPlanId,
+        cycleInfo.currentCycle
+    );
+    
+    emit MetadataUpdated(tokenId, tokenURI(tokenId));
+}
 
     function exitMembership() external nonReentrant whenNotPaused onlyMember {
         MembershipLib.Member storage member = members[msg.sender];

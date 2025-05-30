@@ -1,425 +1,510 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Crypto Membership Admin Panel</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/4.8.0/web3.min.js" crossorigin="anonymous"></script>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BSC Testnet Scenario Tester</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/4.8.0/web3.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-      min-height: 100vh;
-      color: #f8f9fa;
-    }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            color: #333;
+        }
 
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 20px;
-    }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
 
-    .header {
-      text-align: center;
-      margin-bottom: 30px;
-      padding: 20px 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-    }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
 
-    .admin-section {
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(10px);
-      border-radius: 15px;
-      padding: 25px;
-      margin-bottom: 20px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
 
-    h2 {
-      margin-bottom: 20px;
-      color: #fff;
-      font-size: 1.5rem;
-      border-bottom: 2px solid rgba(255, 255, 255, 0.3);
-      padding-bottom: 10px;
-    }
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
 
-    .form-group {
-      margin-bottom: 15px;
-    }
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
 
-    .form-group label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: 600;
-    }
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
 
-    .form-group input,
-    .form-group select {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 5px;
-      background: rgba(255, 255, 255, 0.1);
-      color: #fff;
-      font-size: 14px;
-    }
+        .card h3 {
+            margin-bottom: 20px;
+            color: #1e3c72;
+            font-size: 1.3rem;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
 
-    .btn {
-      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 5px;
-      cursor: pointer;
-      font-weight: 600;
-      margin-top: 10px;
-      transition: all 0.3s;
-    }
+        .form-group {
+            margin-bottom: 15px;
+        }
 
-    .btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-    }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #2d3748;
+        }
 
-    .btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      transform: none;
-    }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
 
-    .btn-danger {
-      background: linear-gradient(135deg, #f5365c 0%, #f56036 100%);
-    }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #1e3c72;
+        }
 
-    .btn-success {
-      background: linear-gradient(135deg, #2dce89 0%, #2fcf6c 100%);
-    }
+        .btn {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin: 5px;
+            display: inline-block;
+        }
 
-    .btn-warning {
-      background: linear-gradient(135deg, #fb6340 0%, #fbb140 100%);
-    }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(30, 60, 114, 0.4);
+        }
 
-    .grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-    }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
 
-    .wallet-status {
-      padding: 10px;
-      border-radius: 5px;
-      margin-bottom: 15px;
-      text-align: center;
-      font-weight: 600;
-    }
+        .btn-danger {
+            background: linear-gradient(135deg, #e53e3e 0%, #fc8181 100%);
+        }
 
-    .wallet-connected {
-      background: rgba(45, 206, 137, 0.2);
-      color: #2dce89;
-      border: 1px solid #2dce89;
-    }
+        .btn-success {
+            background: linear-gradient(135deg, #38a169 0%, #68d391 100%);
+        }
 
-    .wallet-disconnected {
-      background: rgba(245, 54, 92, 0.2);
-      color: #f5365c;
-      border: 1px solid #f5365c;
-    }
+        .btn-warning {
+            background: linear-gradient(135deg, #d69e2e 0%, #f6e05e 100%);
+        }
 
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 15px;
-      margin-bottom: 20px;
-    }
+        .btn-info {
+            background: linear-gradient(135deg, #3182ce 0%, #63b3ed 100%);
+        }
 
-    .stats-item {
-      background: rgba(255, 255, 255, 0.1);
-      padding: 15px;
-      border-radius: 10px;
-      text-align: center;
-    }
+        .scenario-builder {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #1e3c72;
+        }
 
-    .stats-item h4 {
-      color: rgba(255, 255, 255, 0.7);
-      margin-bottom: 10px;
-      font-size: 0.9rem;
-    }
+        .scenario-step {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
 
-    .stats-item p {
-      font-size: 1.5rem;
-      font-weight: bold;
-      color: #fff;
-    }
+        .step-info {
+            flex: 1;
+            margin-right: 15px;
+        }
 
-    .action-buttons {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 15px;
-    }
+        .step-actions {
+            display: flex;
+            gap: 5px;
+        }
 
-    .log-container {
-      background: rgba(0, 0, 0, 0.2);
-      border-radius: 5px;
-      padding: 15px;
-      max-height: 200px;
-      overflow-y: auto;
-      margin-top: 20px;
-      font-family: monospace;
-    }
+        .wallet-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
 
-    .log-entry {
-      margin-bottom: 5px;
-      padding: 5px;
-      border-radius: 3px;
-    }
+        .wallet-card {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s;
+        }
 
-    .log-success {
-      color: #2dce89;
-    }
+        .wallet-card.connected {
+            border-color: #68d391;
+            background: rgba(72, 187, 120, 0.05);
+        }
 
-    .log-error {
-      color: #f5365c;
-    }
+        .wallet-card.member {
+            border-color: #3182ce;
+            background: rgba(49, 130, 206, 0.05);
+        }
 
-    .log-info {
-      color: #11cdef;
-    }
+        .wallet-info {
+            margin-bottom: 10px;
+        }
 
-    .tabs {
-      display: flex;
-      margin-bottom: 20px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-    }
+        .wallet-name {
+            font-weight: bold;
+            color: #1e3c72;
+            font-size: 1.1rem;
+        }
 
-    .tab {
-      padding: 10px 20px;
-      cursor: pointer;
-      border-bottom: 3px solid transparent;
-      transition: all 0.3s;
-    }
+        .wallet-address {
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: #666;
+            word-break: break-all;
+        }
 
-    .tab.active {
-      border-bottom: 3px solid #4facfe;
-      color: #fff;
-      font-weight: bold;
-    }
+        .wallet-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 10px 0;
+            font-size: 0.9rem;
+        }
 
-    .tab-content {
-      display: none;
-    }
+        .stat-item {
+            background: #f8f9fa;
+            padding: 8px;
+            border-radius: 5px;
+            text-align: center;
+        }
 
-    .tab-content.active {
-      display: block;
-    }
+        .stat-label {
+            color: #666;
+            font-size: 0.8rem;
+        }
 
-    @media (max-width: 768px) {
-      .grid-2 {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
+        .stat-value {
+            font-weight: bold;
+            color: #1e3c72;
+        }
+
+        .execution-panel {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 10px;
+            height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 8px;
+            border-radius: 4px;
+            border-left: 4px solid transparent;
+        }
+
+        .log-success {
+            background-color: rgba(72, 187, 120, 0.2);
+            border-left-color: #48bb78;
+        }
+
+        .log-error {
+            background-color: rgba(245, 101, 101, 0.2);
+            border-left-color: #f56565;
+        }
+
+        .log-info {
+            background-color: rgba(66, 153, 225, 0.2);
+            border-left-color: #4299e1;
+        }
+
+        .log-warning {
+            background-color: rgba(236, 201, 75, 0.2);
+            border-left-color: #ecc94b;
+        }
+
+        .predefined-scenarios {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .scenario-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #e2e8f0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .scenario-card:hover {
+            border-color: #1e3c72;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(30, 60, 114, 0.2);
+        }
+
+        .scenario-title {
+            font-weight: bold;
+            color: #1e3c72;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .scenario-description {
+            color: #666;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #1e3c72, #2a5298);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-pending { background: #ecc94b; }
+        .status-running { background: #4299e1; animation: pulse 1s infinite; }
+        .status-success { background: #48bb78; }
+        .status-error { background: #f56565; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .network-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .network-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #68d391;
+        }
+
+        .network-indicator.disconnected {
+            background-color: #fc8181;
+        }
+
+        .tx-link {
+            color: #3182ce;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .tx-link:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+
+            .wallet-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .predefined-scenarios {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 
 <body>
-  <div class="container">
-    <div class="header">
-      <h1>Crypto Membership NFT Admin Panel</h1>
+      <div class="container">
+        <div class="header">
+            <h1>🧪 เครื่องมือทดสอบสถานการณ์ BSC Testnet</h1>
+            <p>สร้างเทสเคสแบบกำหนดเองด้วยธุรกรรมจริงบน Blockchain</p>
+        </div>
+
+        <!-- Network Status -->
+        <div class="card">
+            <div class="network-status">
+                <div id="networkIndicator" class="network-indicator disconnected"></div>
+                <span id="networkName">ยังไม่เชื่อมต่อกับ BSC Testnet</span>
+                <button class="btn btn-success" onclick="connectToNetwork()">เชื่อมต่อ Wallet</button>
+                <button class="btn btn-info" onclick="addBSCTestnet()">เพิ่ม BSC Testnet</button>
+            </div>
+        </div>
+
+        <div class="dashboard">
+            <!-- Scenario Builder -->
+            <div class="card">
+                <h3>🎯 ตัวสร้างสถานการณ์ทดสอบ</h3>
+                
+                <!-- Predefined Scenarios -->
+                <div class="predefined-scenarios">
+                    <div class="scenario-card" onclick="loadScenario('chain_registration')">
+                        <div class="scenario-title">📈 ทดสอบการสมัครแบบลูกโซ่</div>
+                        <div class="scenario-description">ผู้ใช้ A สมัครก่อน จากนั้น B-Z สมัครใต้ A ทั้งหมดด้วยแพลน 1</div>
+                    </div>
+                    
+                    <div class="scenario-card" onclick="loadScenario('multi_plan_test')">
+                        <div class="scenario-title">🎲 ทดสอบการกระจายหลายแพลน</div>
+                        <div class="scenario-description">ผู้ใช้สมัครกระจายไปตามแพลนต่างๆ แบบสุ่มกับอัพไลน์ที่ผสมกัน</div>
+                    </div>
+                    
+                    <div class="scenario-card" onclick="loadScenario('upgrade_sequence')">
+                        <div class="scenario-title">⬆️ ทดสอบการอัพเกรดแพลนตามลำดับ</div>
+                        <div class="scenario-description">ทดสอบการอัพเกรดแพลนตามลำดับและการจ่ายเงินแนะนำ</div>
+                    </div>
+                    
+                    <div class="scenario-card" onclick="loadScenario('custom')">
+                        <div class="scenario-title">🔧 สถานการณ์แบบกำหนดเอง</div>
+                        <div class="scenario-description">สร้างเทสเคสของคุณเองทีละขั้นตอน</div>
+                    </div>
+                </div>
+
+                <!-- Custom Scenario Builder -->
+                <div id="customBuilder" style="display: none;">
+                    <div class="scenario-builder">
+                        <h4>ตัวสร้างเทสเคสแบบกำหนดเอง</h4>
+                        <div class="form-group">
+                            <label>ชื่อเทสเคส:</label>
+                            <input type="text" id="testCaseName" placeholder="เทสเคสของฉัน">
+                        </div>
+                        <div class="form-group">
+                            <label>จำนวน Test Wallets:</label>
+                            <input type="number" id="walletCount" value="5" min="2" max="26">
+                        </div>
+                        <div class="form-group">
+                            <label>จำนวน USDT ที่อนุมัติอัตโนมัติ:</label>
+                            <input type="number" id="autoApproveAmount" value="100" min="1">
+                        </div>
+                        <button class="btn btn-success" onclick="generateTestWallets()">สร้าง Test Wallets</button>
+                    </div>
+                </div>
+
+                <!-- Execution Controls -->
+                <div style="margin-top: 20px;">
+                    <button class="btn btn-success" onclick="executeScenario()" id="executeBtn" disabled>🚀 เริ่มทำสถานการณ์</button>
+                    <button class="btn btn-warning" onclick="pauseExecution()" id="pauseBtn" disabled>⏸️ หยุดชั่วคราว</button>
+                    <button class="btn btn-danger" onclick="stopExecution()" id="stopBtn" disabled>⏹️ หยุด</button>
+                    <button class="btn btn-info" onclick="resetScenario()">🔄 รีเซ็ต</button>
+                </div>
+
+                <!-- Progress -->
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div id="progressText">พร้อมเริ่มการทดสอบ...</div>
+            </div>
+
+            <!-- Execution Panel -->
+            <div class="card">
+                <h3>📊 บันทึกการทำงานแบบเรียลไทม์</h3>
+                <button class="btn" onclick="clearLog()" style="float: right; margin-top: -50px;">ล้างบันทึก</button>
+                <div class="execution-panel" id="executionLog">
+                    <div class="log-entry log-info">[00:00:00] 🧪 เครื่องมือทดสอบสถานการณ์ BSC Testnet พร้อมแล้ว!</div>
+                    <div class="log-entry log-info">[00:00:00] 💡 เลือกสถานการณ์เพื่อเริ่มการทดสอบ...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Wallets Grid -->
+        <div class="card">
+            <h3>👛 การจัดการ Test Wallets</h3>
+            <div class="wallet-grid" id="walletGrid">
+                <!-- Wallets will be generated here -->
+            </div>
+        </div>
+
+        <!-- Contract Information -->
+        <div class="card">
+            <h3>📋 ข้อมูลสัญญา</h3>
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                <p><strong>FakeUSDT:</strong> <span style="font-family: monospace;">0xA2e4112adDe3Bd3E0458e51f7617a9823234680f</span></p>
+                <p><strong>CryptoMembershipNFT:</strong> <span style="font-family: monospace;">0x148B98CA32A7231169a7B256E91F9454055B7C29</span></p>
+                <p><strong>Owner:</strong> <span style="font-family: monospace;">0x2D6b2D23730d8737225146e74975B1273Dc005AF</span></p>
+                <p><strong>BSC Testnet Explorer:</strong> <a href="https://testnet.bscscan.com/" target="_blank" class="tx-link">https://testnet.bscscan.com/</a></p>
+            </div>
+        </div>
     </div>
+    <script>
+        // Contract addresses and ABIs (same as before)
+        const FAKE_USDT_ADDRESS = '0xA2e4112adDe3Bd3E0458e51f7617a9823234680f';
+        const CRYPTO_MEMBERSHIP_NFT_ADDRESS = '0x148B98CA32A7231169a7B256E91F9454055B7C29';
+        const OWNER_ADDRESS = '0x2D6b2D23730d8737225146e74975B1273Dc005AF';
 
-    <div id="walletStatus" class="wallet-status wallet-disconnected">
-      Wallet Not Connected
-    </div>
-    <button id="connectWalletBtn" class="btn btn-success" style="margin-bottom: 20px;"
-      onclick="connectWallet()">เชื่อมต่อกระเป๋าเงิน</button>
-
-    <div class="tabs">
-      <div class="tab active" data-tab="plans">แผนสมาชิก</div>
-      <div class="tab" data-tab="finance">การเงิน</div>
-      <div class="tab" data-tab="system">จัดการระบบ</div>
-      <div class="tab" data-tab="stats">สถิติ</div>
-    </div>
-
-    <!-- แผนสมาชิก -->
-    <div id="plans" class="tab-content active">
-      <div class="admin-section">
-        <h2>สร้างแผนสมาชิกใหม่</h2>
-        <div class="form-group">
-          <label>ชื่อแผน:</label>
-          <input type="text" id="planName" placeholder="ชื่อแผน">
-        </div>
-        <div class="form-group">
-          <label>ราคา (USDT):</label>
-          <input type="number" id="planPrice" placeholder="ราคา" step="0.1">
-        </div>
-        <div class="form-group">
-          <label>จำนวนสมาชิกต่อรอบ:</label>
-          <input type="number" id="membersPerCycle" value="4" readonly>
-        </div>
-        <button class="btn" onclick="createPlan()">สร้างแผน</button>
-      </div>
-
-      <div class="admin-section">
-        <h2>จัดการแผนสมาชิก</h2>
-        <div class="form-group">
-          <label>เลือกแผน:</label>
-          <select id="managePlanId">
-            <option value="">-- เลือกแผน --</option>
-          </select>
-        </div>
-        <div class="action-buttons">
-          <button class="btn btn-success" onclick="setPlanStatus(true)">เปิดใช้งาน</button>
-          <button class="btn btn-danger" onclick="setPlanStatus(false)">ปิดใช้งาน</button>
-        </div>
-      </div>
-
-      <div class="admin-section">
-        <h2>ตั้งค่ารูปภาพแผน</h2>
-        <div class="form-group">
-          <label>เลือกแผน:</label>
-          <select id="imagePlanId">
-            <option value="">-- เลือกแผน --</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>IPFS URI:</label>
-          <input type="text" id="planImageURI" placeholder="bafybei...">
-        </div>
-        <button class="btn" onclick="setPlanImage()">ตั้งค่ารูปภาพ</button>
-      </div>
-    </div>
-
-    <!-- การเงิน -->
-    <div id="finance" class="tab-content">
-      <div class="admin-section">
-        <h2>ยอดคงเหลือ</h2>
-        <div class="stats-grid">
-          <div class="stats-item">
-            <h4>ยอดเจ้าของ</h4>
-            <p id="ownerBalance">0 USDT</p>
-          </div>
-          <div class="stats-item">
-            <h4>ยอดค่าธรรมเนียมระบบ</h4>
-            <p id="feeBalance">0 USDT</p>
-          </div>
-          <div class="stats-item">
-            <h4>ยอดกองทุน</h4>
-            <p id="fundBalance">0 USDT</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="grid-2">
-        <div class="admin-section">
-          <h2>ถอนยอดเจ้าของ</h2>
-          <div class="form-group">
-            <label>จำนวน (USDT):</label>
-            <input type="number" id="ownerWithdrawAmount" placeholder="จำนวน" step="0.1">
-          </div>
-          <button class="btn" onclick="withdrawOwnerBalance()">ถอนเงิน</button>
-        </div>
-
-        <div class="admin-section">
-          <h2>ถอนยอดค่าธรรมเนียม</h2>
-          <div class="form-group">
-            <label>จำนวน (USDT):</label>
-            <input type="number" id="feeWithdrawAmount" placeholder="จำนวน" step="0.1">
-          </div>
-          <button class="btn" onclick="withdrawFeeBalance()">ถอนเงิน</button>
-        </div>
-      </div>
-
-      <div class="admin-section">
-        <h2>ถอนยอดกองทุน</h2>
-        <div class="form-group">
-          <label>จำนวน (USDT):</label>
-          <input type="number" id="fundWithdrawAmount" placeholder="จำนวน" step="0.1">
-        </div>
-        <button class="btn" onclick="withdrawFundBalance()">ถอนเงิน</button>
-      </div>
-    </div>
-
-    <!-- จัดการระบบ -->
-    <div id="system" class="tab-content">
-      <div class="admin-section">
-        <h2>การควบคุมระบบ</h2>
-        <div class="action-buttons">
-          <button class="btn btn-danger" onclick="pauseSystem(true)">หยุดระบบชั่วคราว</button>
-          <button class="btn btn-success" onclick="pauseSystem(false)">เริ่มระบบ</button>
-        </div>
-      </div>
-
-      <div class="admin-section">
-        <h2>การตั้งค่า URI</h2>
-        <div class="form-group">
-          <label>Base URI:</label>
-          <input type="text" id="baseURI" placeholder="ipfs://">
-        </div>
-        <button class="btn" onclick="setBaseURI()">บันทึก</button>
-      </div>
-
-      <div class="admin-section">
-        <h2>ฟังก์ชันฉุกเฉิน</h2>
-        <div class="action-buttons">
-          <button class="btn btn-warning" onclick="requestEmergencyWithdraw()">ขอถอนเงินฉุกเฉิน</button>
-          <button class="btn btn-danger" onclick="emergencyWithdraw()">ถอนเงินฉุกเฉิน</button>
-          <button class="btn" onclick="cancelEmergencyWithdraw()">ยกเลิกการถอนฉุกเฉิน</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- สถิติ -->
-    <div id="stats" class="tab-content">
-      <div class="admin-section">
-        <h2>สถิติระบบ</h2>
-        <div class="stats-grid">
-          <div class="stats-item">
-            <h4>จำนวนสมาชิกทั้งหมด</h4>
-            <p id="totalMembers">0</p>
-          </div>
-          <div class="stats-item">
-            <h4>รายได้รวม</h4>
-            <p id="totalRevenue">0 USDT</p>
-          </div>
-          <div class="stats-item">
-            <h4>คอมมิชชั่นที่จ่ายแล้ว</h4>
-            <p id="totalCommission">0 USDT</p>
-          </div>
-          <div class="stats-item">
-            <h4>สถานะระบบ</h4>
-            <p id="systemStatus">กำลังทำงาน</p>
-          </div>
-        </div>
-        <div class="action-buttons">
-          <button class="btn" onclick="getSystemStats()">รีเฟรชข้อมูล</button>
-        </div>
-      </div>
-
-      <div class="admin-section">
-        <h2>บันทึกการทำงาน</h2>
-        <div class="log-container" id="logContainer">
-          <div class="log-entry log-info">พร้อมใช้งานแผงควบคุมแอดมิน</div>
-        </div>
-        <button class="btn" onclick="clearLog()">ล้างบันทึก</button>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    // Contract addresses
-    const NFT_ADDRESS = '0x148B98CA32A7231169a7B256E91F9454055B7C29';
-    const USDT_ADDRESS = '0xA2e4112adDe3Bd3E0458e51f7617a9823234680f';
-
-    // ABIs
-    const NFT_ABI = [
+        // Simplified ABIs for testing
+        const NFT_ABI = [
       {
         "inputs": [
           {
@@ -2280,7 +2365,7 @@
       }
     ];
 
-    const USDT_ABI = [
+        const USDT_ABI = [
       {
         "inputs": [],
         "stateMutability": "nonpayable",
@@ -2737,404 +2822,586 @@
       }
     ];
 
-    // Global variables
-    let web3, accounts, nftContract, usdtContract;
-    let nftOwner, decimals;
-
-    // Utility Functions
-    function logMessage(message, type = 'info') {
-      const logContainer = document.getElementById('logContainer');
-      const timestamp = new Date().toLocaleTimeString();
-      const logEntry = document.createElement('div');
-      logEntry.className = `log-entry log-${type}`;
-      logEntry.textContent = `[${timestamp}] ${message}`;
-
-      logContainer.appendChild(logEntry);
-      logContainer.scrollTop = logContainer.scrollHeight;
-    }
-
-    function clearLog() {
-      document.getElementById('logContainer').innerHTML = '';
-    }
-
-    function formatAmount(amount, decimals) {
-      if (!amount) return "0";
-      const amountStr = amount.toString();
-      const formatted = (parseFloat(amountStr) / Math.pow(10, Number(decimals))).toFixed(2);
-      return formatted;
-    }
-
-    // Main Functions - ประกาศทั้งหมดก่อน DOMContentLoaded
-    async function connectWallet() {
-      if (typeof window.ethereum === 'undefined') {
-        logMessage('MetaMask ไม่พบ! กรุณาติดตั้ง MetaMask', 'error');
-        return;
-      }
-
-      try {
-        accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        web3 = new Web3(window.ethereum);
-
-        nftContract = new web3.eth.Contract(NFT_ABI, NFT_ADDRESS);
-        usdtContract = new web3.eth.Contract(USDT_ABI, USDT_ADDRESS);
-
-        nftOwner = await nftContract.methods.owner().call();
-        decimals = await usdtContract.methods.decimals().call();
-
-        if (accounts[0].toLowerCase() !== nftOwner.toLowerCase()) {
-          logMessage('คุณไม่ใช่เจ้าของสัญญา!', 'error');
-          document.body.innerHTML = '<div class="container"><h1>คุณไม่มีสิทธิ์เข้าถึง</h1><p>เฉพาะเจ้าของสัญญาเท่านั้นที่สามารถเข้าถึงหน้านี้ได้</p></div>';
-          return;
-        }
-
-        document.getElementById('walletStatus').textContent = `เชื่อมต่อแล้ว: ${accounts[0].slice(0, 8)}...${accounts[0].slice(-6)}`;
-        document.getElementById('walletStatus').className = 'wallet-status wallet-connected';
-        document.getElementById('connectWalletBtn').textContent = 'เชื่อมต่อแล้ว';
-        document.getElementById('connectWalletBtn').disabled = true;
-
-        await loadPlans();
-        await getSystemStats();
-
-        logMessage('เชื่อมต่อกับสัญญาสำเร็จ!', 'success');
-      } catch (error) {
-        logMessage(`การเชื่อมต่อล้มเหลว: ${error.message}`, 'error');
-      }
-    }
-
-    async function loadPlans() {
-      try {
-        const status = await nftContract.methods.getContractStatus().call();
-        const planCount = Number(status.currentPlanCount);
-
-        const planDropdowns = ['managePlanId', 'imagePlanId'];
-
-        for (const dropdownId of planDropdowns) {
-          const dropdown = document.getElementById(dropdownId);
-          dropdown.innerHTML = '<option value="">-- เลือกแผน --</option>';
-
-          for (let i = 1; i <= planCount; i++) {
-            const plan = await nftContract.methods.plans(i).call();
-            const option = document.createElement('option');
-            option.value = i;
-            option.textContent = `แผน ${i}: ${plan.name} (${formatAmount(plan.price, decimals)} USDT)`;
-            dropdown.appendChild(option);
-          }
-        }
-      } catch (error) {
-        logMessage(`ไม่สามารถโหลดแผนได้: ${error.message}`, 'error');
-      }
-    }
-
-    async function createPlan() {
-      try {
-        const name = document.getElementById('planName').value;
-        const price = document.getElementById('planPrice').value;
-        const membersPerCycle = document.getElementById('membersPerCycle').value;
-
-        if (!name || !price || !membersPerCycle) {
-          logMessage('กรุณากรอกข้อมูลให้ครบถ้วน', 'error');
-          return;
-        }
-
-        const decimalsNum = Number(decimals);
-        const priceInTokenUnits = Math.floor(parseFloat(price) * Math.pow(10, decimalsNum));
-        const priceWei = priceInTokenUnits.toString();
-
-        logMessage(`กำลังสร้างแผน "${name}" ราคา ${price} USDT...`, 'info');
-
-        const tx = await nftContract.methods.createPlan(priceWei, name, membersPerCycle)
-          .send({ from: accounts[0] });
-
-        logMessage(`สร้างแผนสำเร็จ! TX: ${tx.transactionHash.slice(0, 10)}...`, 'success');
-
-        document.getElementById('planName').value = '';
-        document.getElementById('planPrice').value = '';
-
-        await loadPlans();
-      } catch (error) {
-        logMessage(`การสร้างแผนล้มเหลว: ${error.message}`, 'error');
-      }
-    }
-
-    async function setPlanStatus(isActive) {
-      try {
-        const planId = document.getElementById('managePlanId').value;
-
-        if (!planId) {
-          logMessage('กรุณาเลือกแผน', 'error');
-          return;
-        }
-
-        logMessage(`กำลัง${isActive ? 'เปิด' : 'ปิด'}ใช้งานแผน ${planId}...`, 'info');
-
-        const tx = await nftContract.methods.setPlanStatus(planId, isActive)
-          .send({ from: accounts[0] });
-
-        logMessage(`${isActive ? 'เปิด' : 'ปิด'}ใช้งานแผนสำเร็จ! TX: ${tx.transactionHash.slice(0, 10)}...`, 'success');
-
-        await loadPlans();
-      } catch (error) {
-        logMessage(`การตั้งค่าสถานะแผนล้มเหลว: ${error.message}`, 'error');
-      }
-    }
-
-    async function setPlanImage() {
-      try {
-        const planId = document.getElementById('imagePlanId').value;
-        const imageURI = document.getElementById('planImageURI').value;
-
-        if (!planId || !imageURI) {
-          logMessage('กรุณากรอกข้อมูลให้ครบถ้วน', 'error');
-          return;
-        }
-
-        logMessage(`กำลังตั้งค่ารูปภาพสำหรับแผน ${planId}...`, 'info');
-
-        const tx = await nftContract.methods.setPlanDefaultImage(planId, imageURI)
-          .send({ from: accounts[0] });
-
-        logMessage(`ตั้งค่ารูปภาพสำเร็จ! TX: ${tx.transactionHash.slice(0, 10)}...`, 'success');
-
-        document.getElementById('planImageURI').value = '';
-      } catch (error) {
-        logMessage(`การตั้งค่ารูปภาพล้มเหลว: ${error.message}`, 'error');
-      }
-    }
-
-    async function withdrawOwnerBalance() {
-      try {
-        const amount = document.getElementById('ownerWithdrawAmount').value;
-
-        if (!amount) {
-          logMessage('กรุณากรอกจำนวนเงิน', 'error');
-          return;
-        }
-
-        const decimalsNum = Number(decimals);
-        const amountInTokenUnits = Math.floor(parseFloat(amount) * Math.pow(10, decimalsNum));
-        const amountWei = amountInTokenUnits.toString();
-
-        logMessage(`กำลังถอนเงินเจ้าของ ${amount} USDT...`, 'info');
-
-        const tx = await nftContract.methods.withdrawOwnerBalance(amountWei)
-          .send({ from: accounts[0] });
-
-        logMessage(`ถอนเงินสำเร็จ! TX: ${tx.transactionHash.slice(0, 10)}...`, 'success');
-
-        document.getElementById('ownerWithdrawAmount').value = '';
-        await getSystemStats();
-      } catch (error) {
-        logMessage(`การถอนเงินล้มเหลว: ${error.message}`, 'error');
-      }
-    }
-
-    async function withdrawFeeBalance() {
-      try {
-        const amount = document.getElementById('feeWithdrawAmount').value;
-
-        if (!amount) {
-          logMessage('กรุณากรอกจำนวนเงิน', 'error');
-          return;
-        }
-
-        const decimalsNum = Number(decimals);
-        const amountInTokenUnits = Math.floor(parseFloat(amount) * Math.pow(10, decimalsNum));
-        const amountWei = amountInTokenUnits.toString();
-
-        logMessage(`กำลังถอนเงินค่าธรรมเนียม ${amount} USDT...`, 'info');
-
-        const tx = await nftContract.methods.withdrawFeeSystemBalance(amountWei)
-          .send({ from: accounts[0] });
-
-        logMessage(`ถอนเงินสำเร็จ! TX: ${tx.transactionHash.slice(0, 10)}...`, 'success');
-
-        document.getElementById('feeWithdrawAmount').value = '';
-        await getSystemStats();
-      } catch (error) {
-        logMessage(`การถอนเงินล้มเหลว: ${error.message}`, 'error');
-      }
-    }
-
-    async function withdrawFundBalance() {
-      try {
-        const amount = document.getElementById('fundWithdrawAmount').value;
-
-        if (!amount) {
-          logMessage('กรุณากรอกจำนวนเงิน', 'error');
-          return;
-        }
-
-        const decimalsNum = Number(decimals);
-        const amountInTokenUnits = Math.floor(parseFloat(amount) * Math.pow(10, decimalsNum));
-        const amountWei = amountInTokenUnits.toString();
-
-        logMessage(`กำลังถอนเงินกองทุน ${amount} USDT...`, 'info');
-
-        const tx = await nftContract.methods.withdrawFundBalance(amountWei)
-          .send({ from: accounts[0] });
-
-        logMessage(`ถอนเงินสำเร็จ! TX: ${tx.transactionHash.slice(0, 10)}...`, 'success');
-
-        document.getElementById('fundWithdrawAmount').value = '';
-        await getSystemStats();
-      } catch (error) {
-        logMessage(`การถอนเงินล้มเหลว: ${error.message}`, 'error');
-      }
-    }
-
-    async function pauseSystem(isPaused) {
-      try {
-        logMessage(`กำลัง${isPaused ? 'หยุด' : 'เริ่ม'}ระบบ...`, 'info');
-
-        const tx = await nftContract.methods.setPaused(isPaused)
-          .send({ from: accounts[0] });
-
-        logMessage(`${isPaused ? 'หยุด' : 'เริ่ม'}ระบบสำเร็จ! TX: ${tx.transactionHash.slice(0, 10)}...`, 'success');
-
-        await getSystemStats();
-      } catch (error) {
-        logMessage(`การ${isPaused ? 'หยุด' : 'เริ่ม'}ระบบล้มเหลว: ${error.message}`, 'error');
-      }
-    }
-
-    async function setBaseURI() {
-      try {
-        const baseURI = document.getElementById('baseURI').value;
-
-        if (!baseURI) {
-          logMessage('กรุณากรอก Base URI', 'error');
-          return;
-        }
-
-        logMessage(`กำลังตั้งค่า Base URI: ${baseURI}...`, 'info');
-
-        const tx = await nftContract.methods.setBaseURI(baseURI)
-          .send({ from: accounts[0] });
-
-        logMessage(`ตั้งค่า Base URI สำเร็จ! TX: ${tx.transactionHash.slice(0, 10)}...`, 'success');
-
-        document.getElementById('baseURI').value = '';
-      } catch (error) {
-        logMessage(`การตั้งค่า Base URI ล้มเหลว: ${error.message}`, 'error');
-      }
-    }
-
-    async function requestEmergencyWithdraw() {
-      try {
-        if (!confirm('คุณแน่ใจหรือไม่ที่จะขอถอนเงินฉุกเฉิน?\nนี่คือฟังก์ชันฉุกเฉินที่ควรใช้เฉพาะในกรณีจำเป็นเท่านั้น')) {
-          return;
-        }
-
-        logMessage('กำลังขอถอนเงินฉุกเฉิน...', 'info');
-
-        const tx = await nftContract.methods.requestEmergencyWithdraw()
-          .send({ from: accounts[0] });
-
-        logMessage(`ขอถอนเงินฉุกเฉินสำเร็จ! TX: ${tx.transactionHash.slice(0, 10)}...`, 'success');
-        logMessage('โปรดรอ 2 วันก่อนจะสามารถดำเนินการถอนเงินฉุกเฉินได้', 'info');
-
-        await getSystemStats();
-      } catch (error) {
-        logMessage(`การขอถอนเงินฉุกเฉินล้มเหลว: ${error.message}`, 'error');
-      }
-    }
-
-    async function cancelEmergencyWithdraw() {
-      try {
-        logMessage('กำลังยกเลิกการขอถอนเงินฉุกเฉิน...', 'info');
-
-        const tx = await nftContract.methods.cancelEmergencyWithdraw()
-          .send({ from: accounts[0] });
-
-        logMessage(`ยกเลิกการขอถอนเงินฉุกเฉินสำเร็จ! TX: ${tx.transactionHash.slice(0, 10)}...`, 'success');
-
-        await getSystemStats();
-      } catch (error) {
-        logMessage(`การยกเลิกการขอถอนเงินฉุกเฉินล้มเหลว: ${error.message}`, 'error');
-      }
-    }
-
-    async function emergencyWithdraw() {
-      try {
-        if (!confirm('คำเตือน: นี่คือการถอนเงินฉุกเฉินทั้งหมดในสัญญา!\nคุณแน่ใจหรือไม่ที่จะดำเนินการต่อ?')) {
-          return;
-        }
-
-        logMessage('กำลังถอนเงินฉุกเฉิน...', 'info');
-
-        const tx = await nftContract.methods.emergencyWithdraw()
-          .send({ from: accounts[0] });
-
-        logMessage(`ถอนเงินฉุกเฉินสำเร็จ! TX: ${tx.transactionHash.slice(0, 10)}...`, 'success');
-
-        await getSystemStats();
-      } catch (error) {
-        logMessage(`การถอนเงินฉุกเฉินล้มเหลว: ${error.message}`, 'error');
-      }
-    }
-
-    async function getSystemStats() {
-      try {
-        logMessage('กำลังโหลดข้อมูลสถิติ...', 'info');
-
-        const stats = await nftContract.methods.getSystemStats().call();
-        const status = await nftContract.methods.getContractStatus().call();
-
-        document.getElementById('totalMembers').textContent = Number(stats.totalMembers);
-        document.getElementById('totalRevenue').textContent = `${formatAmount(stats.totalRevenue, decimals)} USDT`;
-        document.getElementById('totalCommission').textContent = `${formatAmount(stats.totalCommission, decimals)} USDT`;
-        document.getElementById('ownerBalance').textContent = `${formatAmount(stats.ownerFunds, decimals)} USDT`;
-        document.getElementById('feeBalance').textContent = `${formatAmount(stats.feeFunds, decimals)} USDT`;
-        document.getElementById('fundBalance').textContent = `${formatAmount(stats.fundFunds, decimals)} USDT`;
-        document.getElementById('systemStatus').textContent = status.isPaused ? 'หยุดชั่วคราว' : 'กำลังทำงาน';
-
-        logMessage('โหลดข้อมูลสำเร็จ', 'success');
-      } catch (error) {
-        logMessage(`ไม่สามารถโหลดข้อมูลสถิติได้: ${error.message}`, 'error');
-      }
-    }
-
-    // Event Listeners - วางไว้ท้ายสุด
-    document.addEventListener('DOMContentLoaded', function () {
-      // Log initial message
-      logMessage('กรุณาเชื่อมต่อกระเป๋าเงินเพื่อเริ่มใช้งาน', 'info');
-
-      // Tab switching
-      const tabs = document.querySelectorAll('.tab');
-      tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-          tabs.forEach(t => t.classList.remove('active'));
-          tab.classList.add('active');
-
-          document.querySelectorAll('.tab-content').forEach(content => {
-            content.classList.remove('active');
-          });
-
-          const tabId = tab.getAttribute('data-tab');
-          document.getElementById(tabId).classList.add('active');
-        });
-      });
-
-      // Handle wallet events
-      if (typeof window.ethereum !== 'undefined') {
-        window.ethereum.on('accountsChanged', (newAccounts) => {
-          if (newAccounts.length === 0) {
-            location.reload();
-          } else if (nftOwner && newAccounts[0].toLowerCase() !== nftOwner.toLowerCase()) {
-            document.body.innerHTML = '<div class="container"><h1>คุณไม่มีสิทธิ์เข้าถึง</h1><p>เฉพาะเจ้าของสัญญาเท่านั้นที่สามารถเข้าถึงหน้านี้ได้</p></div>';
-          } else {
-            accounts = newAccounts;
-            document.getElementById('walletStatus').textContent = `เชื่อมต่อแล้ว: ${accounts[0].slice(0, 8)}...${accounts[0].slice(-6)}`;
-            document.getElementById('walletStatus').className = 'wallet-status wallet-connected';
-          }
+        // BSC Testnet configuration
+        const BSC_TESTNET = {
+            chainId: '0x61',
+            chainName: 'BSC Testnet',
+            nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
+            rpcUrls: ['https://bsc-testnet-dataseed.bnbchain.org'],
+            blockExplorerUrls: ['https://testnet.bscscan.com/']
+        };
+
+        // Global variables
+        let web3, currentAccount, nftContract, usdtContract;
+        let testWallets = [];
+        let currentScenario = null;
+        let isExecuting = false;
+        let isPaused = false;
+        let currentStep = 0;
+        let executionStartTime = 0;
+
+        // Predefined scenarios
+        const scenarios = {
+            chain_registration: {
+                name: "Chain Registration Test",
+                description: "User A registers first, then B-Z register under A",
+                steps: [
+                    { action: "setup_wallets", params: { count: 10 } },
+                    { action: "fund_wallets", params: { amount: "50" } },
+                    { action: "register_first", params: { wallet: 0, plan: 1 } },
+                    { action: "register_chain", params: { wallets: [1,2,3,4,5,6,7,8,9], upline: 0, plan: 1 } }
+                ]
+            },
+            multi_plan_test: {
+                name: "Multi-Plan Distribution Test",
+                description: "Users register across different plans",
+                steps: [
+                    { action: "setup_wallets", params: { count: 8 } },
+                    { action: "fund_wallets", params: { amount: "100" } },
+                    { action: "register_first", params: { wallet: 0, plan: 1 } },
+                    { action: "register_multi_plan", params: { 
+                        registrations: [
+                            { wallet: 1, plan: 2, upline: 0 },
+                            { wallet: 2, plan: 3, upline: 0 },
+                            { wallet: 3, plan: 1, upline: 1 },
+                            { wallet: 4, plan: 2, upline: 1 },
+                            { wallet: 5, plan: 4, upline: 2 },
+                            { wallet: 6, plan: 1, upline: 3 },
+                            { wallet: 7, plan: 3, upline: 4 }
+                        ]
+                    }}
+                ]
+            },
+            upgrade_sequence: {
+                name: "Plan Upgrade Sequence Test",
+                description: "Test sequential plan upgrades",
+                steps: [
+                    { action: "setup_wallets", params: { count: 5 } },
+                    { action: "fund_wallets", params: { amount: "200" } },
+                    { action: "register_first", params: { wallet: 0, plan: 1 } },
+                    { action: "register_chain", params: { wallets: [1,2,3,4], upline: 0, plan: 1 } },
+                    { action: "upgrade_sequence", params: { 
+                        upgrades: [
+                            { wallet: 0, targetPlan: 5 },
+                            { wallet: 1, targetPlan: 3 },
+                            { wallet: 2, targetPlan: 4 }
+                        ]
+                    }}
+                ]
+            },
+            custom: {
+                name: "Custom Scenario",
+                description: "Build your own test case",
+                steps: []
+            }
+        };
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            logMessage('🧪 BSC Testnet Scenario Tester Ready!');
+            logMessage('💡 Select a predefined scenario or build a custom one');
         });
 
-        window.ethereum.on('chainChanged', () => {
-          location.reload();
-        });
-      }
-    });
-  </script>
+        // Connect to network
+        async function connectToNetwork() {
+            try {
+                if (typeof window.ethereum === 'undefined') {
+                    throw new Error('MetaMask not found! Please install MetaMask.');
+                }
+
+                logMessage('🔄 Connecting to MetaMask...');
+                
+                await window.ethereum.request({ method: 'eth_requestAccounts' });
+                web3 = new Web3(window.ethereum);
+
+                // Switch to BSC Testnet
+                try {
+                    await window.ethereum.request({
+                        method: 'wallet_switchEthereumChain',
+                        params: [{ chainId: BSC_TESTNET.chainId }],
+                    });
+                } catch (switchError) {
+                    if (switchError.code === 4902) {
+                        await addBSCTestnet();
+                    } else {
+                        throw switchError;
+                    }
+                }
+
+                const accounts = await web3.eth.getAccounts();
+                currentAccount = accounts[0];
+
+                // Initialize contracts
+                nftContract = new web3.eth.Contract(NFT_ABI, CRYPTO_MEMBERSHIP_NFT_ADDRESS);
+                usdtContract = new web3.eth.Contract(USDT_ABI, FAKE_USDT_ADDRESS);
+
+                updateNetworkStatus(true);
+                logMessage(`✅ Connected to BSC Testnet: ${shortenAddress(currentAccount)}`, 'success');
+
+            } catch (error) {
+                logMessage(`❌ Connection failed: ${error.message}`, 'error');
+                updateNetworkStatus(false);
+            }
+        }
+
+        // Add BSC Testnet
+        async function addBSCTestnet() {
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_addEthereumChain',
+                    params: [BSC_TESTNET],
+                });
+                logMessage('✅ BSC Testnet added to MetaMask', 'success');
+            } catch (error) {
+                logMessage(`❌ Failed to add BSC Testnet: ${error.message}`, 'error');
+            }
+        }
+
+        // Update network status UI
+        function updateNetworkStatus(connected) {
+            const indicator = document.getElementById('networkIndicator');
+            const name = document.getElementById('networkName');
+            
+            if (connected) {
+                indicator.className = 'network-indicator';
+                name.textContent = 'Connected to BSC Testnet';
+            } else {
+                indicator.className = 'network-indicator disconnected';
+                name.textContent = 'Not Connected to BSC Testnet';
+            }
+        }
+
+        // Load predefined scenario
+        function loadScenario(scenarioKey) {
+            if (scenarioKey === 'custom') {
+                document.getElementById('customBuilder').style.display = 'block';
+                currentScenario = { ...scenarios.custom };
+                logMessage('🔧 Custom scenario builder activated');
+            } else {
+                document.getElementById('customBuilder').style.display = 'none';
+                currentScenario = { ...scenarios[scenarioKey] };
+                logMessage(`📋 Loaded scenario: ${currentScenario.name}`, 'success');
+                logMessage(`📝 Description: ${currentScenario.description}`);
+                
+                // Enable execute button
+                document.getElementById('executeBtn').disabled = false;
+            }
+            
+            updateProgress(0, `Loaded: ${currentScenario.name}`);
+        }
+
+        // Generate test wallets
+        function generateTestWallets() {
+            const count = parseInt(document.getElementById('walletCount').value);
+            const testCaseName = document.getElementById('testCaseName').value || 'Custom Test';
+            
+            testWallets = [];
+            
+            for (let i = 0; i < count; i++) {
+                const wallet = web3.eth.accounts.create();
+                testWallets.push({
+                    name: `Wallet ${String.fromCharCode(65 + i)}`,
+                    address: wallet.address,
+                    privateKey: wallet.privateKey,
+                    balance: '0',
+                    usdtBalance: '0',
+                    isMember: false,
+                    planId: 0,
+                    totalEarnings: '0',
+                    totalReferrals: 0
+                });
+            }
+
+            renderWalletGrid();
+            document.getElementById('executeBtn').disabled = false;
+            
+            logMessage(`✅ Generated ${count} test wallets for: ${testCaseName}`, 'success');
+            logMessage('💡 You can now execute your custom scenario');
+        }
+
+        // Render wallet grid
+        function renderWalletGrid() {
+            const grid = document.getElementById('walletGrid');
+            grid.innerHTML = '';
+
+            testWallets.forEach((wallet, index) => {
+                const walletCard = document.createElement('div');
+                walletCard.className = `wallet-card ${wallet.isMember ? 'member' : ''}`;
+                walletCard.innerHTML = `
+                    <div class="wallet-info">
+                        <div class="wallet-name">${wallet.name}</div>
+                        <div class="wallet-address">${shortenAddress(wallet.address)}</div>
+                    </div>
+                    <div class="wallet-stats">
+                        <div class="stat-item">
+                            <div class="stat-label">BNB</div>
+                            <div class="stat-value">${parseFloat(wallet.balance).toFixed(4)}</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">USDT</div>
+                            <div class="stat-value">${parseFloat(wallet.usdtBalance).toFixed(2)}</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Plan</div>
+                            <div class="stat-value">${wallet.isMember ? wallet.planId : 'None'}</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Earnings</div>
+                            <div class="stat-value">${parseFloat(wallet.totalEarnings).toFixed(2)}</div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <button class="btn btn-info" style="font-size: 0.8rem; padding: 5px 10px;" 
+                                onclick="fundWallet(${index})">💰 Fund</button>
+                        <button class="btn btn-success" style="font-size: 0.8rem; padding: 5px 10px;" 
+                                onclick="manualRegister(${index})" ${wallet.isMember ? 'disabled' : ''}>
+                                📝 Register</button>
+                    </div>
+                `;
+                grid.appendChild(walletCard);
+            });
+        }
+
+        // Execute scenario
+        async function executeScenario() {
+            if (!currentScenario || !web3) {
+                logMessage('❌ Please connect wallet and select a scenario first', 'error');
+                return;
+            }
+
+            isExecuting = true;
+            isPaused = false;
+            currentStep = 0;
+            executionStartTime = Date.now();
+
+            document.getElementById('executeBtn').disabled = true;
+            document.getElementById('pauseBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = false;
+
+            logMessage(`🚀 Starting execution: ${currentScenario.name}`, 'success');
+            
+            try {
+                for (let i = 0; i < currentScenario.steps.length; i++) {
+                    if (!isExecuting) break;
+                    
+                    while (isPaused) {
+                        await sleep(1000);
+                    }
+
+                    currentStep = i;
+                    const step = currentScenario.steps[i];
+                    
+                    updateProgress((i / currentScenario.steps.length) * 100, `Step ${i + 1}: ${step.action}`);
+                    logMessage(`📍 Step ${i + 1}/${currentScenario.steps.length}: ${step.action}`);
+
+                    await executeStep(step);
+                    await sleep(2000); // Pause between steps
+                }
+
+                if (isExecuting) {
+                    updateProgress(100, 'Scenario completed successfully!');
+                    logMessage('🎉 Scenario execution completed successfully!', 'success');
+                    
+                    const duration = (Date.now() - executionStartTime) / 1000;
+                    logMessage(`⏱️ Total execution time: ${duration.toFixed(1)} seconds`);
+                }
+
+            } catch (error) {
+                logMessage(`❌ Scenario execution failed: ${error.message}`, 'error');
+                updateProgress(currentStep / currentScenario.steps.length * 100, 'Execution failed');
+            } finally {
+                isExecuting = false;
+                document.getElementById('executeBtn').disabled = false;
+                document.getElementById('pauseBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = true;
+            }
+        }
+
+        // Execute individual step
+        async function executeStep(step) {
+            switch (step.action) {
+                case 'setup_wallets':
+                    await setupWallets(step.params.count);
+                    break;
+                case 'fund_wallets':
+                    await fundAllWallets(step.params.amount);
+                    break;
+                case 'register_first':
+                    await registerMember(step.params.wallet, step.params.plan, OWNER_ADDRESS);
+                    break;
+                case 'register_chain':
+                    await registerChain(step.params.wallets, step.params.upline, step.params.plan);
+                    break;
+                case 'register_multi_plan':
+                    await registerMultiPlan(step.params.registrations);
+                    break;
+                case 'upgrade_sequence':
+                    await upgradeSequence(step.params.upgrades);
+                    break;
+                default:
+                    logMessage(`⚠️ Unknown step action: ${step.action}`, 'warning');
+            }
+        }
+
+        // Setup wallets
+        async function setupWallets(count) {
+            testWallets = [];
+            
+            for (let i = 0; i < count; i++) {
+                const wallet = web3.eth.accounts.create();
+                testWallets.push({
+                    name: `Wallet ${String.fromCharCode(65 + i)}`,
+                    address: wallet.address,
+                    privateKey: wallet.privateKey,
+                    balance: '0',
+                    usdtBalance: '0',
+                    isMember: false,
+                    planId: 0,
+                    totalEarnings: '0',
+                    totalReferrals: 0
+                });
+            }
+
+            renderWalletGrid();
+            logMessage(`✅ Created ${count} test wallets`, 'success');
+        }
+
+        // Fund all wallets
+        async function fundAllWallets(amount) {
+            logMessage(`💰 Funding all wallets with ${amount} USDT...`);
+            
+            for (let i = 0; i < testWallets.length; i++) {
+                await fundWalletWithUSDT(i, amount);
+                await sleep(1000); // Small delay between funding
+            }
+            
+            logMessage(`✅ All wallets funded with ${amount} USDT`, 'success');
+        }
+
+        // Fund individual wallet
+        async function fundWallet(index) {
+            const amount = prompt('Enter USDT amount to fund:', '50');
+            if (amount && parseFloat(amount) > 0) {
+                await fundWalletWithUSDT(index, amount);
+            }
+        }
+
+        // Fund wallet with USDT (using faucet function)
+        async function fundWalletWithUSDT(index, amount) {
+            try {
+                const wallet = testWallets[index];
+                const amountWithDecimals = web3.utils.toWei(amount, 'mwei'); // 6 decimals for USDT
+
+                // Use the faucet function to get USDT
+                const tx = await usdtContract.methods.faucet(wallet.address, amountWithDecimals)
+                    .send({ from: currentAccount, gas: 200000 });
+
+                wallet.usdtBalance = amount;
+                renderWalletGrid();
+
+                logMessage(`💰 Funded ${wallet.name} with ${amount} USDT`, 'success');
+                logMessage(`📋 TX: ${createTxLink(tx.transactionHash)}`);
+
+            } catch (error) {
+                logMessage(`❌ Failed to fund ${testWallets[index].name}: ${error.message}`, 'error');
+            }
+        }
+
+        // Register member
+        async function registerMember(walletIndex, planId, uplineAddress) {
+            try {
+                const wallet = testWallets[walletIndex];
+                
+                logMessage(`📝 Registering ${wallet.name} for Plan ${planId}...`);
+
+                // First approve USDT
+                const approveAmount = web3.utils.toWei('100', 'mwei'); // Approve 100 USDT
+                
+                // Create a temporary account to sign transactions
+                const account = web3.eth.accounts.privateKeyToAccount(wallet.privateKey);
+                web3.eth.accounts.wallet.add(account);
+
+                // Approve USDT
+                const approveTx = await usdtContract.methods.approve(CRYPTO_MEMBERSHIP_NFT_ADDRESS, approveAmount)
+                    .send({ from: wallet.address, gas: 200000 });
+
+                logMessage(`✅ USDT approved for ${wallet.name}`);
+
+                // Register member
+                const registerTx = await nftContract.methods.registerMember(planId, uplineAddress)
+                    .send({ from: wallet.address, gas: 500000 });
+
+                // Update wallet status
+                wallet.isMember = true;
+                wallet.planId = planId;
+                renderWalletGrid();
+
+                logMessage(`✅ ${wallet.name} registered successfully!`, 'success');
+                logMessage(`📋 Registration TX: ${createTxLink(registerTx.transactionHash)}`);
+
+                // Clean up
+                web3.eth.accounts.wallet.remove(account);
+
+            } catch (error) {
+                logMessage(`❌ Failed to register ${testWallets[walletIndex].name}: ${error.message}`, 'error');
+            }
+        }
+
+        // Register chain (multiple users under one upline)
+        async function registerChain(walletIndices, uplineIndex, planId) {
+            const uplineAddress = testWallets[uplineIndex].address;
+            
+            for (const walletIndex of walletIndices) {
+                if (!isExecuting) break;
+                
+                await registerMember(walletIndex, planId, uplineAddress);
+                await sleep(3000); // Wait 3 seconds between registrations
+            }
+        }
+
+        // Register multiple plans
+        async function registerMultiPlan(registrations) {
+            for (const reg of registrations) {
+                if (!isExecuting) break;
+                
+                const uplineAddress = reg.upline === 0 ? OWNER_ADDRESS : testWallets[reg.upline].address;
+                await registerMember(reg.wallet, reg.plan, uplineAddress);
+                await sleep(3000);
+            }
+        }
+
+        // Upgrade sequence
+        async function upgradeSequence(upgrades) {
+            for (const upgrade of upgrades) {
+                if (!isExecuting) break;
+                
+                await upgradeWalletPlan(upgrade.wallet, upgrade.targetPlan);
+                await sleep(3000);
+            }
+        }
+
+        // Upgrade wallet plan
+        async function upgradeWalletPlan(walletIndex, targetPlan) {
+            try {
+                const wallet = testWallets[walletIndex];
+                
+                if (!wallet.isMember) {
+                    throw new Error(`${wallet.name} is not a member yet`);
+                }
+
+                logMessage(`⬆️ Upgrading ${wallet.name} from Plan ${wallet.planId} to Plan ${targetPlan}...`);
+
+                const account = web3.eth.accounts.privateKeyToAccount(wallet.privateKey);
+                web3.eth.accounts.wallet.add(account);
+
+                // Upgrade plan step by step
+                for (let currentPlan = wallet.planId; currentPlan < targetPlan; currentPlan++) {
+                    const nextPlan = currentPlan + 1;
+                    
+                    const upgradeTx = await nftContract.methods.upgradePlan(nextPlan)
+                        .send({ from: wallet.address, gas: 500000 });
+
+                    wallet.planId = nextPlan;
+                    renderWalletGrid();
+
+                    logMessage(`✅ ${wallet.name} upgraded to Plan ${nextPlan}`, 'success');
+                    logMessage(`📋 Upgrade TX: ${createTxLink(upgradeTx.transactionHash)}`);
+
+                    if (nextPlan < targetPlan) {
+                        await sleep(2000); // Wait between upgrades
+                    }
+                }
+
+                web3.eth.accounts.wallet.remove(account);
+
+            } catch (error) {
+                logMessage(`❌ Failed to upgrade ${testWallets[walletIndex].name}: ${error.message}`, 'error');
+            }
+        }
+
+        // Manual register (for individual wallet testing)
+        async function manualRegister(index) {
+            const planId = prompt('Enter plan ID (1-16):', '1');
+            const upline = prompt('Enter upline address (leave empty for owner):', '') || OWNER_ADDRESS;
+            
+            if (planId && parseInt(planId) >= 1 && parseInt(planId) <= 16) {
+                await registerMember(index, parseInt(planId), upline);
+            }
+        }
+
+        // Control functions
+        function pauseExecution() {
+            isPaused = !isPaused;
+            const btn = document.getElementById('pauseBtn');
+            btn.textContent = isPaused ? '▶️ Resume' : '⏸️ Pause';
+            logMessage(isPaused ? '⏸️ Execution paused' : '▶️ Execution resumed', 'warning');
+        }
+
+        function stopExecution() {
+            isExecuting = false;
+            isPaused = false;
+            document.getElementById('executeBtn').disabled = false;
+            document.getElementById('pauseBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = true;
+            logMessage('⏹️ Execution stopped', 'warning');
+        }
+
+        function resetScenario() {
+            stopExecution();
+            testWallets = [];
+            currentScenario = null;
+            currentStep = 0;
+            document.getElementById('walletGrid').innerHTML = '';
+            document.getElementById('executeBtn').disabled = true;
+            updateProgress(0, 'Ready to start testing...');
+            logMessage('🔄 Scenario reset', 'info');
+        }
+
+        // Update progress
+        function updateProgress(percent, text) {
+            document.getElementById('progressFill').style.width = `${percent}%`;
+            document.getElementById('progressText').textContent = text;
+        }
+
+        // Utility functions
+        function logMessage(message, type = 'info') {
+            const log = document.getElementById('executionLog');
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.innerHTML = `[${timestamp}] ${message}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('executionLog').innerHTML = 
+                '<div class="log-entry log-info">[' + new Date().toLocaleTimeString() + '] 📝 Log cleared</div>';
+        }
+
+        function shortenAddress(address) {
+            if (!address) return "";
+            return `${address.slice(0, 6)}...${address.slice(-4)}`;
+        }
+
+        function createTxLink(txHash) {
+            return `<a href="https://testnet.bscscan.com/tx/${txHash}" target="_blank" class="tx-link">${txHash.slice(0, 10)}...</a>`;
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // Export for debugging
+        window.scenarioTester = {
+            scenarios,
+            testWallets,
+            currentScenario,
+            executeStep,
+            logMessage,
+            web3: () => web3,
+            contracts: () => ({ nft: nftContract, usdt: usdtContract })
+        };
+    </script>
 </body>
-
 </html>
