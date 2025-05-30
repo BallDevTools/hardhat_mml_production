@@ -212,6 +212,7 @@ describe("Gas Usage Optimization", function () {
   
   console.log("✅ Gas efficiency test ผ่าน!");
   });
+
   
   it("Should handle gas optimization for emergency withdrawal", async function() {
     const { nft, usdt, owner, users, decimals } = await loadFixture(deployWithMembersFixture);
@@ -248,4 +249,6 @@ describe("Gas Usage Optimization", function () {
     
     console.log("✅ Emergency withdrawal gas optimization test ผ่าน!");
   });
+
+  
 });

@@ -4,9 +4,9 @@ const { ethers } = require("hardhat");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 
 describe("Input Validation Tests", function () {
-  // *** เพิ่ม deployFixture function ที่หายไป ***
+  // *** แก้ไข deployFixture function เพื่อเพิ่ม user3 ***
   async function deployFixture() {
-    const [owner, user1, user2] = await ethers.getSigners();
+    const [owner, user1, user2, user3] = await ethers.getSigners();
 
     // Deploy FakeUSDT
     const FakeUSDT = await ethers.getContractFactory("FakeUSDT");
@@ -30,13 +30,13 @@ describe("Input Validation Tests", function () {
     // *** แก้ไข: ใช้ parseUnits แทน parseEther ***
     const initialAmount = ethers.parseUnits("100", decimals);
 
-    // แจก USDT ให้ผู้ใช้เพื่อทดสอบ
-    for (const user of [user1, user2]) {
+    // แจก USDT ให้ผู้ใช้เพื่อทดสอบ (เพิ่ม user3)
+    for (const user of [user1, user2, user3]) {
       await usdt.transfer(user.address, initialAmount);
       await usdt.connect(user).approve(await nft.getAddress(), initialAmount);
     }
 
-    return { nft, usdt, owner, user1, user2, decimals };
+    return { nft, usdt, owner, user1, user2, user3, decimals };
   }
 
   it("Should validate all input parameters thoroughly", async function () {

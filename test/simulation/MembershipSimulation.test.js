@@ -64,69 +64,6 @@ describe("Membership Activity Simulation", function () {
   }
 
   // ฟังก์ชันสำหรับสุ่มการกระทำ
-  // แก้ไข test/simulation/MembershipSimulation.test.js
-
-  // ฟังก์ชันสำหรับเตรียม test environment
-  async function deploySimulationFixture() {
-    const signers = await ethers.getSigners();
-    const [owner, ...users] = signers;
-
-    // สร้าง users จำนวน 50 คน
-    const memberUsers = users.slice(0, 50);
-
-    // Deploy FakeUSDT
-    const FakeUSDT = await ethers.getContractFactory("FakeUSDT");
-    const usdt = await FakeUSDT.deploy();
-    await usdt.waitForDeployment();
-
-    // Deploy CryptoMembershipNFT
-    const CryptoMembershipNFT = await ethers.getContractFactory(
-      "CryptoMembershipNFT"
-    );
-    const nft = await CryptoMembershipNFT.deploy(
-      await usdt.getAddress(),
-      owner.address
-    );
-    await nft.waitForDeployment();
-
-    // *** สำคัญ: ตรวจสอบ decimals ก่อนใช้ ***
-    const decimals = await usdt.decimals();
-    console.log(`💰 USDT decimals: ${decimals}`);
-
-    // *** แก้ไข: ใช้ parseUnits แทน parseEther ***
-    const initialAmount = ethers.parseUnits("1000", decimals); // ให้เยอะหน่อยสำหรับ upgrade
-
-    // *** ตรวจสอบยอดเงิน owner ก่อนโอน ***
-    const ownerBalance = await usdt.balanceOf(owner.address);
-    console.log(
-      `👤 Owner balance: ${ethers.formatUnits(ownerBalance, decimals)} USDT`
-    );
-
-    // *** คำนวณจำนวนเงินที่ต้องการ ***
-    const totalNeeded = initialAmount * BigInt(memberUsers.length);
-    console.log(
-      `💵 Total needed: ${ethers.formatUnits(totalNeeded, decimals)} USDT`
-    );
-
-    if (ownerBalance < totalNeeded) {
-      throw new Error(
-        `Insufficient balance. Owner has ${ethers.formatUnits(
-          ownerBalance,
-          decimals
-        )} USDT, but needs ${ethers.formatUnits(totalNeeded, decimals)} USDT`
-      );
-    }
-
-    // แจก USDT และอนุมัติให้ทุกคน
-    for (const user of memberUsers) {
-      await usdt.transfer(user.address, initialAmount);
-      await usdt.connect(user).approve(await nft.getAddress(), initialAmount);
-    }
-
-    return { nft, usdt, owner, memberUsers, decimals };
-  }
-
-  // ฟังก์ชันสำหรับสุ่มการกระทำ
   class MembershipSimulator {
     constructor(nft, usdt, owner, users, decimals) {
       this.nft = nft;
@@ -367,6 +304,8 @@ describe("Membership Activity Simulation", function () {
 
       console.log("\n💎 สถิติระบบจาก Smart Contract:");
       console.log(`   Total Members: ${stats[0]}`);
+      
+      // *** แก้ไข: ใช้ formatUnits แทน formatEther ***
       console.log(
         `   Total Revenue: ${ethers.formatUnits(stats[1], this.decimals)} USDT`
       );
@@ -392,10 +331,11 @@ describe("Membership Activity Simulation", function () {
     it("Should simulate random member activities over time", async function () {
       this.timeout(300000); // 5 นาที timeout
 
-      const { nft, usdt, owner, memberUsers } = await loadFixture(
+      // *** แก้ไข: ส่ง decimals ให้ simulator ***
+      const { nft, usdt, owner, memberUsers, decimals } = await loadFixture(
         deploySimulationFixture
       );
-      const simulator = new MembershipSimulator(nft, usdt, owner, memberUsers);
+      const simulator = new MembershipSimulator(nft, usdt, owner, memberUsers, decimals);
 
       console.log("\n🚀 เริ่มจำลองกิจกรรมสมาชิก...\n");
 
@@ -434,10 +374,11 @@ describe("Membership Activity Simulation", function () {
     it("Should simulate member upgrade chain scenario", async function () {
       this.timeout(180000); // 3 นาที timeout
 
-      const { nft, usdt, owner, memberUsers } = await loadFixture(
+      // *** แก้ไข: ส่ง decimals ให้ simulator ***
+      const { nft, usdt, owner, memberUsers, decimals } = await loadFixture(
         deploySimulationFixture
       );
-      const simulator = new MembershipSimulator(nft, usdt, owner, memberUsers);
+      const simulator = new MembershipSimulator(nft, usdt, owner, memberUsers, decimals);
 
       console.log("\n🔗 จำลองสถานการณ์ Upgrade Chain...\n");
 
@@ -505,10 +446,11 @@ describe("Membership Activity Simulation", function () {
         const plan = simulator.memberPlans.get(user.address);
         const member = await simulator.nft.members(user.address);
 
+        // *** แก้ไข: ใช้ formatUnits แทน formatEther ***
         console.log(
           `   User ${i + 1}: Plan ${plan}, Total Referrals: ${
             member.totalReferrals
-          }, Total Earnings: ${ethers.formatEther(member.totalEarnings)} USDT`
+          }, Total Earnings: ${ethers.formatUnits(member.totalEarnings, decimals)} USDT`
         );
       }
 
@@ -518,7 +460,7 @@ describe("Membership Activity Simulation", function () {
     it("Should simulate cycle completion scenarios", async function () {
       this.timeout(240000); // 4 นาที timeout
 
-      const { nft, usdt, owner, memberUsers } = await loadFixture(
+      const { nft, usdt, owner, memberUsers, decimals } = await loadFixture(
         deploySimulationFixture
       );
 
@@ -585,10 +527,11 @@ describe("Membership Activity Simulation", function () {
     it("Should simulate mixed activity with time progression", async function () {
       this.timeout(360000); // 6 นาที timeout
 
-      const { nft, usdt, owner, memberUsers } = await loadFixture(
+      // *** แก้ไข: ส่ง decimals ให้ simulator ***
+      const { nft, usdt, owner, memberUsers, decimals } = await loadFixture(
         deploySimulationFixture
       );
-      const simulator = new MembershipSimulator(nft, usdt, owner, memberUsers);
+      const simulator = new MembershipSimulator(nft, usdt, owner, memberUsers, decimals);
 
       console.log("\n🎭 จำลองกิจกรรมผสมผสานตามเวลา...\n");
 
