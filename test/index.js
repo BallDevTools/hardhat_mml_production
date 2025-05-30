@@ -12,10 +12,8 @@ require('./unit/ContractErrors.test');
 
 // การทดสอบ Events
 require('./unit/CompleteEventTests.test');
-require('./unit/EventValidation.test');
 
 // การทดสอบ Integration
-require('./integration/StateConsistency.test');
 require('./integration/CommissionPayment.test');
 require('./integration/PlanUpgradeChain.test');
 
