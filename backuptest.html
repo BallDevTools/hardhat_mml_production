@@ -304,8 +304,8 @@
             <h3>📋 Contract Information</h3>
             <div class="contract-info">
                 <h4>Deployed Contracts</h4>
-                <p><strong>FakeUSDT:</strong> 0x585648e5fDeC8B731e6fBA203f4E542214B18fF3</p>
-                <p><strong>CryptoMembershipNFT:</strong> 0x13b14A6Ae0A51b944a1833CaF343Ee5b4C84c182</p>
+                <p><strong>FakeUSDT:</strong> 0x3e9a38319cEb9adcad4c5a3C0FE2CE8BcA41b741</p>
+                <p><strong>CryptoMembershipNFT:</strong> 0x0af92B4De76A9ce10C6D4AE6ea9485F2d32Ba3f0</p>
                 <p><strong>Owner:</strong> 0x2D6b2D23730d8737225146e74975B1273Dc005AF</p>
                 <p><strong>BSC Testnet Explorer:</strong> <a href="https://testnet.bscscan.com/" target="_blank"
                         class="tx-link">https://testnet.bscscan.com/</a></p>
@@ -428,11 +428,11 @@
 
     <script>
         // Real Contract Addresses on BSC Testnet
-        const FAKE_USDT_ADDRESS = '0x585648e5fDeC8B731e6fBA203f4E542214B18fF3';
-        const CRYPTO_MEMBERSHIP_NFT_ADDRESS = '0x13b14A6Ae0A51b944a1833CaF343Ee5b4C84c182';
+        const FAKE_USDT_ADDRESS = '0x3e9a38319cEb9adcad4c5a3C0FE2CE8BcA41b741';
+        const CRYPTO_MEMBERSHIP_NFT_ADDRESS = '0x0af92B4De76A9ce10C6D4AE6ea9485F2d32Ba3f0';
         const OWNER_ADDRESS = '0x2D6b2D23730d8737225146e74975B1273Dc005AF';
 
-        // Contract ABIs
+        // Contract ABIs - จะต้องใส่เอง
         const NFT_ABI = [
             {
                 "inputs": [
@@ -2387,28 +2387,6 @@
                 "type": "error"
             },
             {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "owner",
-                        "type": "address"
-                    }
-                ],
-                "name": "OwnableInvalidOwner",
-                "type": "error"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "account",
-                        "type": "address"
-                    }
-                ],
-                "name": "OwnableUnauthorizedAccount",
-                "type": "error"
-            },
-            {
                 "anonymous": false,
                 "inputs": [
                     {
@@ -2431,25 +2409,6 @@
                     }
                 ],
                 "name": "Approval",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": true,
-                        "internalType": "address",
-                        "name": "previousOwner",
-                        "type": "address"
-                    },
-                    {
-                        "indexed": true,
-                        "internalType": "address",
-                        "name": "newOwner",
-                        "type": "address"
-                    }
-                ],
-                "name": "OwnershipTransferred",
                 "type": "event"
             },
             {
@@ -2545,37 +2504,6 @@
                 "type": "function"
             },
             {
-                "inputs": [
-                    {
-                        "internalType": "uint256",
-                        "name": "amount",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "burn",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "account",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "amount",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "burnFrom",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
                 "inputs": [],
                 "name": "decimals",
                 "outputs": [
@@ -2585,43 +2513,7 @@
                         "type": "uint8"
                     }
                 ],
-                "stateMutability": "pure",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "to",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "amount",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "faucet",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "to",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "amount",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "mint",
-                "outputs": [],
-                "stateMutability": "nonpayable",
+                "stateMutability": "view",
                 "type": "function"
             },
             {
@@ -2635,26 +2527,6 @@
                     }
                 ],
                 "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "owner",
-                "outputs": [
-                    {
-                        "internalType": "address",
-                        "name": "",
-                        "type": "address"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "renounceOwnership",
-                "outputs": [],
-                "stateMutability": "nonpayable",
                 "type": "function"
             },
             {
@@ -2733,19 +2605,6 @@
                         "type": "bool"
                     }
                 ],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "newOwner",
-                        "type": "address"
-                    }
-                ],
-                "name": "transferOwnership",
-                "outputs": [],
                 "stateMutability": "nonpayable",
                 "type": "function"
             }
@@ -2884,9 +2743,7 @@
             // แปลงเป็น string ก่อนส่งไปให้ web3.utils.fromWei
             const formatted = decimals == 18
                 ? web3.utils.fromWei(amount.toString(), 'ether')
-                : (decimals == 6
-                    ? web3.utils.fromWei(amount.toString(), 'mwei')
-                    : (parseFloat(amount.toString()) / Math.pow(10, decimals)).toString());
+                : web3.utils.fromWei(amount.toString(), 'mwei');
             return parseFloat(formatted).toFixed(2);
         }
 
@@ -2985,7 +2842,6 @@
         }
 
         // Approve USDT
-        // Approve USDT (แก้ไขใหม่)
         async function approveUSDT() {
             try {
                 if (!currentAccount) {
@@ -2999,89 +2855,60 @@
 
                 logMessage(`🔄 Approving ${amount} USDT...`, 'info');
 
-                // ขอค่า decimals และแสดงให้ดูด้วย
+                // ใช้วิธีที่ง่ายที่สุด: ขอ decimals แล้วคำนวณโดยตรง
                 const decimals = parseInt(await usdtContract.methods.decimals().call());
-                console.log("USDT Decimals:", decimals);
+                console.log("Decimals:", decimals);
 
-                // คำนวณจำนวน USDT ในรูปแบบที่ถูกต้อง
+                // คำนวณ amount * 10^decimals ให้ได้จำนวนที่ถูกต้อง
                 const amountFloat = parseFloat(amount);
-                let amountWithDecimals;
+                let amountWei;
 
-                // คำนวณโดยใช้ BigInt เพื่อความแม่นยำ
-                amountWithDecimals = (BigInt(Math.floor(amountFloat * 1000000)) * BigInt(10 ** (decimals - 6))).toString();
-                console.log("Amount with decimals:", amountWithDecimals);
-
-                // ทางเลือกอื่น: ใช้การคำนวณตามปกติ (ถ้าต้องการเปรียบเทียบ)
-                const altAmount = (amountFloat * (10 ** decimals)).toString();
-                console.log("Alternative amount calculation:", altAmount);
-
-                // ตรวจสอบ balance ของผู้ใช้
-                const balance = await usdtContract.methods.balanceOf(currentAccount).call();
-                console.log("User USDT Balance:", balance.toString());
-
-                // ประมาณการใช้ gas
-                try {
-                    const gasEstimate = await usdtContract.methods.approve(
-                        CRYPTO_MEMBERSHIP_NFT_ADDRESS,
-                        amountWithDecimals
-                    ).estimateGas({ from: currentAccount });
-
-                    // เพิ่ม buffer 50%
-                    const gasWithBuffer = Math.floor(Number(gasEstimate) * 1.5);
-                    console.log("Gas estimate:", gasEstimate, "Gas with buffer:", gasWithBuffer);
-
-                    // ส่งธุรกรรม
-                    const tx = await usdtContract.methods.approve(
-                        CRYPTO_MEMBERSHIP_NFT_ADDRESS,
-                        amountWithDecimals
-                    ).send({
-                        from: currentAccount,
-                        gas: gasWithBuffer
-                    });
-
-                    logMessage(`✅ USDT approved successfully!`, 'success');
-                    logMessage(`📋 TX Hash: ${tx.transactionHash}`, 'info');
-
-                    // สร้างและแสดงลิงก์ transaction
-                    const txLink = createTxLink(tx.transactionHash);
-                    const lastLogEntry = document.querySelector('#logContainer .log-entry:last-child');
-                    lastLogEntry.appendChild(document.createElement('br'));
-                    lastLogEntry.appendChild(txLink);
-
-                    // Refresh data
-                    await loadWalletData();
-                } catch (gasError) {
-                    console.error("Gas estimation error:", gasError);
-                    logMessage(`⚠️ Gas estimation failed. Attempting transaction with default gas.`, 'warning');
-
-                    // ใช้ค่า gas สูงเผื่อไว้
-                    const tx = await usdtContract.methods.approve(
-                        CRYPTO_MEMBERSHIP_NFT_ADDRESS,
-                        amountWithDecimals
-                    ).send({
-                        from: currentAccount,
-                        gas: 300000
-                    });
-
-                    logMessage(`✅ USDT approved successfully with default gas!`, 'success');
-                    logMessage(`📋 TX Hash: ${tx.transactionHash}`, 'info');
-
-                    // Refresh data
-                    await loadWalletData();
+                // วิธีที่ 1: ใช้ toWei สำหรับค่าที่รองรับ
+                if (decimals === 18) {
+                    amountWei = web3.utils.toWei(amount.toString(), 'ether');
+                } else if (decimals === 6) {
+                    amountWei = web3.utils.toWei(amount.toString(), 'mwei');
+                } else {
+                    // วิธีที่ 2: ใช้วิธีคำนวณธรรมดาสำหรับค่าอื่นๆ
+                    // ใช้ String เพื่อหลีกเลี่ยงปัญหา floating point
+                    const multiplier = Math.pow(10, decimals);
+                    amountWei = (amountFloat * multiplier).toFixed(0).toString();
                 }
+
+                console.log("Approving amount:", amountFloat, "as Wei:", amountWei);
+
+                // ส่งค่าเป็น string
+                const gasEstimate = await usdtContract.methods.approve(
+                    CRYPTO_MEMBERSHIP_NFT_ADDRESS,
+                    amountWei
+                ).estimateGas({ from: currentAccount });
+
+                // แปลง gasEstimate เป็น Number ก่อนคำนวณ
+                const gasWithBuffer = Math.floor(Number(gasEstimate) * 1.2);
+
+                const tx = await usdtContract.methods.approve(
+                    CRYPTO_MEMBERSHIP_NFT_ADDRESS,
+                    amountWei
+                ).send({
+                    from: currentAccount,
+                    gas: gasWithBuffer
+                });
+
+                logMessage(`✅ USDT approved successfully!`, 'success');
+                logMessage(`📋 TX Hash: ${tx.transactionHash}`, 'info');
+
+                // สร้างและแสดงลิงก์ transaction
+                const txLink = createTxLink(tx.transactionHash);
+                const lastLogEntry = document.querySelector('#logContainer .log-entry:last-child');
+                lastLogEntry.appendChild(document.createElement('br'));
+                lastLogEntry.appendChild(txLink);
+
+                // Refresh data
+                await loadWalletData();
+
             } catch (error) {
                 console.error("Approval error details:", error);
                 logMessage(`❌ Approval failed: ${error.message}`, 'error');
-
-                // ข้อมูลเพิ่มเติมเกี่ยวกับข้อผิดพลาด
-                if (error.code) {
-                    logMessage(`Error code: ${error.code}`, 'error');
-                }
-
-                if (error.receipt) {
-                    logMessage(`Receipt status: ${error.receipt.status}`, 'error');
-                    logMessage(`Gas used: ${error.receipt.gasUsed}`, 'error');
-                }
             }
         }
 
@@ -3096,7 +2923,6 @@
         }
 
         // Register Member
-        // Register Member (แก้ไขใหม่)
         async function registerMember() {
             try {
                 if (!nftContract) {
@@ -3116,72 +2942,31 @@
 
                 logMessage(`🔄 Registering for Plan ${planId} with upline ${shortenAddress(upline)}...`, 'info');
 
-                // เพิ่ม logging เพื่อตรวจสอบค่า
-                console.log("Current Account:", currentAccount);
-                console.log("Upline Address:", upline);
-                console.log("Plan ID:", planId);
-
-                // ดึง decimals ของ USDT
+                // Check USDT allowance
                 const usdtDecimals = parseInt(await usdtContract.methods.decimals().call());
-                console.log("USDT Decimals:", usdtDecimals);
-
-                // ดึงข้อมูลแผน
-                const plan = await nftContract.methods.plans(planId).call();
-                console.log("Plan Info:", plan);
-                console.log("Plan Price:", plan.price.toString());
-
-                // ตรวจสอบค่า allowance
                 const allowance = await usdtContract.methods.allowance(currentAccount, CRYPTO_MEMBERSHIP_NFT_ADDRESS).call();
-                console.log("Allowance:", allowance.toString());
 
-                // ตรวจสอบ balance ของผู้ใช้
-                const balance = await usdtContract.methods.balanceOf(currentAccount).call();
-                console.log("User Balance:", balance.toString());
+                // Get plan price
+                const plan = await nftContract.methods.plans(planId).call();
+                const planPrice = plan.price;
 
-                // แปลงค่าเป็น BigInt ก่อนเปรียบเทียบ
-                const allowanceBN = BigInt(allowance.toString());
-                const planPriceBN = BigInt(plan.price.toString());
+                console.log("Allowance:", allowance, "Type:", typeof allowance);
+                console.log("Plan Price:", planPrice, "Type:", typeof planPrice);
 
-                if (allowanceBN < planPriceBN) {
-                    const formattedPrice = formatAmount(plan.price, usdtDecimals);
-                    logMessage(`⚠️ Insufficient USDT allowance. Please approve at least ${formattedPrice} USDT first.`, 'warning');
+                // แปลงเป็น string และแปลงเป็น BigInt อย่างชัดเจน
+                if (BigInt(allowance.toString()) < BigInt(planPrice.toString())) {
+                    logMessage(`⚠️ Insufficient USDT allowance. Please approve at least ${formatAmount(planPrice, usdtDecimals)} USDT first.`, 'warning');
                     return;
                 }
 
-                // ตรวจสอบว่ามี USDT เพียงพอหรือไม่
-                const balanceBN = BigInt(balance.toString());
-                if (balanceBN < planPriceBN) {
-                    const formattedPrice = formatAmount(plan.price, usdtDecimals);
-                    logMessage(`⚠️ Insufficient USDT balance. You need at least ${formattedPrice} USDT.`, 'error');
-                    return;
-                }
-
-                // ตรวจสอบว่าผู้ใช้เป็นสมาชิกอยู่แล้วหรือไม่
-                const userBalance = await nftContract.methods.balanceOf(currentAccount).call();
-                if (parseInt(userBalance) > 0) {
-                    logMessage(`⚠️ You are already a member.`, 'error');
-                    return;
-                }
-
-                // ประมาณค่า gas
                 const gasEstimate = await nftContract.methods.registerMember(planId, upline)
-                    .estimateGas({
-                        from: currentAccount,
-                        gas: 3000000  // เพิ่ม gas ให้มากขึ้น
-                    })
-                    .catch(error => {
-                        console.error("Gas estimation error:", error);
-                        // ถ้าไม่สามารถประมาณค่า gas ได้ ให้ใช้ค่าเริ่มต้น
-                        return 500000;
-                    });
+                    .estimateGas({ from: currentAccount });
 
-                console.log("Gas estimate:", gasEstimate);
+                console.log("Gas estimate:", gasEstimate, "Type:", typeof gasEstimate);
 
-                // เพิ่ม gas buffer
-                const gasWithBuffer = Math.floor(Number(gasEstimate) * 1.5); // เพิ่ม buffer เป็น 50%
-                console.log("Gas with buffer:", gasWithBuffer);
+                // ปรับการคำนวณ gas โดยแปลงเป็น Number ก่อน
+                const gasWithBuffer = Math.floor(Number(gasEstimate) * 1.2);
 
-                // เรียกฟังก์ชัน registerMember
                 const tx = await nftContract.methods.registerMember(planId, upline)
                     .send({
                         from: currentAccount,
@@ -3193,6 +2978,7 @@
                 logMessage(`⛽ Gas used: ${tx.gasUsed}`, 'info');
 
                 const txLink = createTxLink(tx.transactionHash);
+
                 const lastLogEntry = document.querySelector('#logContainer .log-entry:last-child');
                 lastLogEntry.appendChild(document.createElement('br'));
                 lastLogEntry.appendChild(txLink);
@@ -3203,16 +2989,6 @@
             } catch (error) {
                 console.error("Registration error details:", error);
                 logMessage(`❌ Registration failed: ${error.message}`, 'error');
-
-                // ข้อมูลเพิ่มเติมเกี่ยวกับข้อผิดพลาด
-                if (error.code) {
-                    logMessage(`Error code: ${error.code}`, 'error');
-                }
-
-                if (error.receipt) {
-                    logMessage(`Receipt status: ${error.receipt.status}`, 'error');
-                    logMessage(`Gas used: ${error.receipt.gasUsed}`, 'error');
-                }
             }
         }
 
@@ -3457,7 +3233,7 @@
                 })
                     .on('data', (event) => {
                         const { from, to, amount } = event.returnValues;
-                        const decimals = 6; // FakeUSDT uses 6 decimals
+                        const decimals = 18; // Assuming USDT decimals
                         const amountFormatted = formatAmount(amount, decimals);
                         logMessage(`💸 Referral paid: ${shortenAddress(from)} → ${shortenAddress(to)} (${amountFormatted} USDT)`, 'success');
                     })
@@ -3589,7 +3365,8 @@
             logMessage('💡 Important Notes:', 'warning');
             logMessage('1. Make sure you have BNB for gas fees', 'info');
             logMessage('2. Make sure you have USDT tokens', 'info');
-            logMessage('3. All transactions will be real and visible on BSC Testnet!', 'info');
+            logMessage('3. ABI arrays are empty - you need to fill them', 'warning');
+            logMessage('4. All transactions will be real and visible on BSC Testnet!', 'info');
 
             if (typeof window.ethereum === 'undefined') {
                 logMessage('❌ MetaMask not detected', 'error');
