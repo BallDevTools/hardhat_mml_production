@@ -1,0 +1,3330 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 TPS Performance Tester - BSC Testnet</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/4.8.0/web3.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+        }
+
+        .performance-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 2px solid #dee2e6;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #4c51bf 0%, #667eea 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76, 81, 191, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #38a169 0%, #68d391 100%);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #e53e3e 0%, #fc8181 100%);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #d69e2e 0%, #f6e05e 100%);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4c51bf, #667eea);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .log-container {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 10px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .log-entry {
+            margin-bottom: 3px;
+            padding: 4px;
+            border-radius: 3px;
+        }
+
+        .log-success {
+            background-color: rgba(72, 187, 120, 0.2);
+        }
+
+        .log-error {
+            background-color: rgba(245, 101, 101, 0.2);
+        }
+
+        .log-info {
+            background-color: rgba(66, 153, 225, 0.2);
+        }
+
+        .log-warning {
+            background-color: rgba(236, 201, 75, 0.2);
+        }
+
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            height: 300px;
+            position: relative;
+        }
+
+        .chart {
+            width: 100%;
+            height: 100%;
+        }
+
+        .real-time-stats {
+            background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .tps-display {
+            font-size: 3rem;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #4c51bf 0%, #667eea 100%);
+            color: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(76, 81, 191, 0.3);
+        }
+
+        .performance-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .indicator-good {
+            border-left: 4px solid #68d391;
+        }
+
+        .indicator-medium {
+            border-left: 4px solid #f6e05e;
+        }
+
+        .indicator-poor {
+            border-left: 4px solid #fc8181;
+        }
+
+        @media (max-width: 768px) {
+            .performance-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 TPS Performance Tester</h1>
+            <p>วัดความเร็วการทำธุรกรรม Transaction Per Second บน BSC Testnet</p>
+        </div>
+
+        <!-- Real-time TPS Display -->
+        <div class="tps-display" id="tpsDisplay">
+            <div style="font-size: 1rem; opacity: 0.8;">Current TPS</div>
+            <div id="currentTPS">0.00</div>
+            <div style="font-size: 1rem; opacity: 0.8;">transactions/second</div>
+        </div>
+
+        <!-- Performance Statistics -->
+        <div class="card">
+            <h3>📊 สถิติการทำงาน</h3>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalTransactions">0</div>
+                    <div class="stat-label">Total Transactions</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="successfulTx">0</div>
+                    <div class="stat-label">Successful</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="failedTx">0</div>
+                    <div class="stat-label">Failed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="avgGasUsed">0</div>
+                    <div class="stat-label">Avg Gas Used</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="avgConfirmTime">0</div>
+                    <div class="stat-label">Avg Confirm Time (s)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="maxTPS">0.00</div>
+                    <div class="stat-label">Peak TPS</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="performance-grid">
+            <!-- Test Configuration -->
+            <div class="card">
+                <h3>⚙️ การตั้งค่าการทดสอบ</h3>
+
+                <div class="form-group">
+                    <label>จำนวน Test Wallets:</label>
+                    <input type="number" id="walletCount" value="10" min="5" max="50">
+                </div>
+
+                <div class="form-group">
+                    <label>Transaction Type:</label>
+                    <select id="transactionType">
+                        <option value="register">Register Member</option>
+                        <option value="upgrade">Upgrade Plan</option>
+                        <option value="mixed">Mixed Operations</option>
+                        <option value="approve">USDT Approve Only</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Concurrent Transactions:</label>
+                    <input type="number" id="concurrentTx" value="5" min="1" max="20">
+                </div>
+
+                <div class="form-group">
+                    <label>Batch Size:</label>
+                    <input type="number" id="batchSize" value="10" min="5" max="100">
+                </div>
+
+                <div class="form-group">
+                    <label>Test Duration (seconds):</label>
+                    <input type="number" id="testDuration" value="60" min="30" max="300">
+                </div>
+
+                <div class="form-group">
+                    <label>Gas Price (Gwei):</label>
+                    <input type="number" id="gasPrice" value="5" min="1" max="50">
+                </div>
+
+                <button class="btn btn-success" onclick="startPerformanceTest()" id="startBtn">
+                    🚀 เริ่มทดสอบประสิทธิภาพ
+                </button>
+                <button class="btn btn-danger" onclick="stopPerformanceTest()" id="stopBtn" disabled>
+                    ⏹️ หยุดการทดสอบ
+                </button>
+                <button class="btn" onclick="resetStats()">🔄 รีเซ็ต</button>
+            </div>
+
+            <!-- Performance Indicators -->
+            <div class="card">
+                <h3>📈 ตัวชี้วัดประสิทธิภาพ</h3>
+
+                <div class="performance-indicator indicator-good" id="networkIndicator">
+                    <span>🌐 Network Status</span>
+                    <span id="networkStatus">Checking...</span>
+                </div>
+
+                <div class="performance-indicator indicator-medium" id="gasIndicator">
+                    <span>⛽ Gas Price</span>
+                    <span id="currentGasPrice">- Gwei</span>
+                </div>
+
+                <div class="performance-indicator indicator-good" id="blockIndicator">
+                    <span>🔗 Block Time</span>
+                    <span id="avgBlockTime">3.0s</span>
+                </div>
+
+                <div class="performance-indicator indicator-medium" id="mempoolIndicator">
+                    <span>📊 Pending Transactions</span>
+                    <span id="pendingTxCount">0</span>
+                </div>
+
+                <div class="progress-bar">
+                    <div class="progress-fill" id="testProgress"></div>
+                </div>
+                <div id="progressText">พร้อมเริ่มการทดสอบ...</div>
+            </div>
+        </div>
+
+        <!-- Real-time Performance Chart -->
+        <div class="card">
+            <h3>📈 กราฟประสิทธิภาพแบบเรียลไทม์</h3>
+            <div class="chart-container">
+                <canvas id="performanceChart" class="chart"></canvas>
+            </div>
+        </div>
+
+        <!-- Transaction Log -->
+        <div class="card">
+            <h3>📝 บันทึกการทำธุรกรรม</h3>
+            <button class="btn" onclick="clearLog()" style="float: right; margin-top: -40px;">ล้างบันทึก</button>
+            <div class="log-container" id="logContainer">
+                <div class="log-entry log-info">[00:00:00] 🧪 TPS Performance Tester พร้อมใช้งาน!</div>
+                <div class="log-entry log-info">[00:00:00] 💡 เชื่อมต่อ Wallet และตั้งค่าการทดสอบ</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Contract addresses (ใส่ address ที่ต้องการทดสอบ)
+        const FAKE_USDT_ADDRESS = '0xA2e4112adDe3Bd3E0458e51f7617a9823234680f';
+        const CRYPTO_MEMBERSHIP_NFT_ADDRESS = '0x148B98CA32A7231169a7B256E91F9454055B7C29';
+
+        // Contract ABIs - เว้นไว้ให้ผู้ใช้ใส่
+        const NFT_ABI = [
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_usdtToken",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "initialOwner",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "nonpayable",
+                "type": "constructor"
+            },
+            {
+                "inputs": [],
+                "name": "AlreadyMember",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "CooldownActive",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "ERC721EnumerableForbiddenBatchMint",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "sender",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "owner",
+                        "type": "address"
+                    }
+                ],
+                "name": "ERC721IncorrectOwner",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "operator",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "ERC721InsufficientApproval",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "approver",
+                        "type": "address"
+                    }
+                ],
+                "name": "ERC721InvalidApprover",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "operator",
+                        "type": "address"
+                    }
+                ],
+                "name": "ERC721InvalidOperator",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "owner",
+                        "type": "address"
+                    }
+                ],
+                "name": "ERC721InvalidOwner",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "receiver",
+                        "type": "address"
+                    }
+                ],
+                "name": "ERC721InvalidReceiver",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "sender",
+                        "type": "address"
+                    }
+                ],
+                "name": "ERC721InvalidSender",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "ERC721NonexistentToken",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "owner",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "index",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "ERC721OutOfBoundsIndex",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "EmptyName",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "EmptyURI",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "InactivePlan",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "InvalidAmount",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "InvalidCycleMembers",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "InvalidDecimals",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "InvalidPlanID",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "InvalidRequest",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "InvalidRequests",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "LowFeeBalance",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "LowFundBalance",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "LowOwnerBalance",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "NextPlanOnly",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "NoPlanImage",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "NoRequest",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "NonTransferable",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "NonexistentToken",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "NotMember",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "NotPaused",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "owner",
+                        "type": "address"
+                    }
+                ],
+                "name": "OwnableInvalidOwner",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "account",
+                        "type": "address"
+                    }
+                ],
+                "name": "OwnableUnauthorizedAccount",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "Paused",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "Plan1Only",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "PriceTooLow",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "ReentrancyGuardReentrantCall",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "ReentrantTransfer",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "token",
+                        "type": "address"
+                    }
+                ],
+                "name": "SafeERC20FailedOperation",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "ThirtyDayLock",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "TimelockActive",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "TooSoon",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "UplineNotMember",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "UplinePlanLow",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "ZeroAddress",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "ZeroBalance",
+                "type": "error"
+            },
+            {
+                "inputs": [],
+                "name": "ZeroPrice",
+                "type": "error"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "owner",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "approved",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": true,
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "Approval",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "owner",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "operator",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "bool",
+                        "name": "approved",
+                        "type": "bool"
+                    }
+                ],
+                "name": "ApprovalForAll",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "totalOwner",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "totalFee",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "totalFund",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "BatchWithdrawalProcessed",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "bool",
+                        "name": "status",
+                        "type": "bool"
+                    }
+                ],
+                "name": "ContractPaused",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "EmergencyWithdraw",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "timestamp",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "EmergencyWithdrawInitiated",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "timestamp",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "EmergencyWithdrawRequested",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "ownerAmount",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "feeAmount",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "fundAmount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "FundsDistributed",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "member",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "refundAmount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "MemberExited",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "member",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "upline",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "planId",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "cycleNumber",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "MemberRegistered",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "string",
+                        "name": "message",
+                        "type": "string"
+                    }
+                ],
+                "name": "MembershipMinted",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "string",
+                        "name": "newURI",
+                        "type": "string"
+                    }
+                ],
+                "name": "MetadataUpdated",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "planId",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "cycleNumber",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "NewCycleStarted",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "previousOwner",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "newOwner",
+                        "type": "address"
+                    }
+                ],
+                "name": "OwnershipTransferred",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "planId",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "string",
+                        "name": "name",
+                        "type": "string"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "price",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "membersPerCycle",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "PlanCreated",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "uint256",
+                        "name": "planId",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "string",
+                        "name": "imageURI",
+                        "type": "string"
+                    }
+                ],
+                "name": "PlanDefaultImageSet",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "member",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "oldPlanId",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "newPlanId",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "cycleNumber",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "PlanUpgraded",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "newPriceFeed",
+                        "type": "address"
+                    }
+                ],
+                "name": "PriceFeedUpdated",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "from",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "ReferralPaid",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "newDuration",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "TimelockUpdated",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "from",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": true,
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "Transfer",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "from",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "TransferAttemptBlocked",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "upline",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "downline",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "downlineCurrentPlan",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "downlineTargetPlan",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "UplineNotified",
+                "type": "event"
+            },
+            {
+                "inputs": [],
+                "name": "MAX_MEMBERS_PER_CYCLE",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "TIMELOCK_DURATION",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "approve",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "owner",
+                        "type": "address"
+                    }
+                ],
+                "name": "balanceOf",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "components": [
+                            {
+                                "internalType": "address",
+                                "name": "recipient",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "amount",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "balanceType",
+                                "type": "uint256"
+                            }
+                        ],
+                        "internalType": "struct CryptoMembershipNFT.WithdrawalRequest[]",
+                        "name": "requests",
+                        "type": "tuple[]"
+                    }
+                ],
+                "name": "batchWithdraw",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "cancelEmergencyWithdraw",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_price",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "_name",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_membersPerCycle",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "createPlan",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "emergencyWithdraw",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "exitMembership",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "getApproved",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "getContractStatus",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "isPaused",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "totalBalance",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "memberCount",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "currentPlanCount",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "hasEmergencyRequest",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "emergencyTimeRemaining",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_tokenId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "getNFTImage",
+                "outputs": [
+                    {
+                        "internalType": "string",
+                        "name": "imageURI",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "name",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "description",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "planId",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "createdAt",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_planId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "getPlanCycleInfo",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "currentCycle",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "membersInCurrentCycle",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "membersPerCycle",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_member",
+                        "type": "address"
+                    }
+                ],
+                "name": "getReferralChain",
+                "outputs": [
+                    {
+                        "internalType": "address[]",
+                        "name": "",
+                        "type": "address[]"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "getSystemStats",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "totalMembers",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "totalRevenue",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "totalCommission",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "ownerFunds",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "feeFunds",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "fundFunds",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "owner",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "operator",
+                        "type": "address"
+                    }
+                ],
+                "name": "isApprovedForAll",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "isTokenTransferable",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "pure",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "name": "members",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "upline",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "totalReferrals",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "totalEarnings",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "planId",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "cycleNumber",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "registeredAt",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "name",
+                "outputs": [
+                    {
+                        "internalType": "string",
+                        "name": "",
+                        "type": "string"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "owner",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "ownerOf",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "planCycles",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "currentCycle",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "membersInCurrentCycle",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "planDefaultImages",
+                "outputs": [
+                    {
+                        "internalType": "string",
+                        "name": "",
+                        "type": "string"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "plans",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "price",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "name",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "membersPerCycle",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "isActive",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "priceFeed",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_planId",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "_upline",
+                        "type": "address"
+                    }
+                ],
+                "name": "registerMember",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "renounceOwnership",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "requestEmergencyWithdraw",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "restartAfterPause",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "from",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "safeTransferFrom",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "from",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "bytes",
+                        "name": "data",
+                        "type": "bytes"
+                    }
+                ],
+                "name": "safeTransferFrom",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "operator",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "approved",
+                        "type": "bool"
+                    }
+                ],
+                "name": "setApprovalForAll",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "string",
+                        "name": "baseURI",
+                        "type": "string"
+                    }
+                ],
+                "name": "setBaseURI",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "_paused",
+                        "type": "bool"
+                    }
+                ],
+                "name": "setPaused",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_planId",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "_imageURI",
+                        "type": "string"
+                    }
+                ],
+                "name": "setPlanDefaultImage",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_planId",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "_isActive",
+                        "type": "bool"
+                    }
+                ],
+                "name": "setPlanStatus",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_priceFeed",
+                        "type": "address"
+                    }
+                ],
+                "name": "setPriceFeed",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "bytes4",
+                        "name": "interfaceId",
+                        "type": "bytes4"
+                    }
+                ],
+                "name": "supportsInterface",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "symbol",
+                "outputs": [
+                    {
+                        "internalType": "string",
+                        "name": "",
+                        "type": "string"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "index",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "tokenByIndex",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "tokenImages",
+                "outputs": [
+                    {
+                        "internalType": "string",
+                        "name": "imageURI",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "name",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "description",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "planId",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "createdAt",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "owner",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "index",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "tokenOfOwnerByIndex",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_tokenId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "tokenURI",
+                "outputs": [
+                    {
+                        "internalType": "string",
+                        "name": "",
+                        "type": "string"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "totalSupply",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "from",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "tokenId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "transferFrom",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "newOwner",
+                        "type": "address"
+                    }
+                ],
+                "name": "transferOwnership",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_planId",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_newMembersPerCycle",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "updateMembersPerCycle",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_newPlanId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "upgradePlan",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "usdtToken",
+                "outputs": [
+                    {
+                        "internalType": "contract IERC20",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "validateContractBalance",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "withdrawFeeSystemBalance",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "withdrawFundBalance",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "withdrawOwnerBalance",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            }
+        ];
+
+        const USDT_ABI = [
+            {
+                "inputs": [],
+                "stateMutability": "nonpayable",
+                "type": "constructor"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "spender",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "allowance",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "needed",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "ERC20InsufficientAllowance",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "sender",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "balance",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "needed",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "ERC20InsufficientBalance",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "approver",
+                        "type": "address"
+                    }
+                ],
+                "name": "ERC20InvalidApprover",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "receiver",
+                        "type": "address"
+                    }
+                ],
+                "name": "ERC20InvalidReceiver",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "sender",
+                        "type": "address"
+                    }
+                ],
+                "name": "ERC20InvalidSender",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "spender",
+                        "type": "address"
+                    }
+                ],
+                "name": "ERC20InvalidSpender",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "owner",
+                        "type": "address"
+                    }
+                ],
+                "name": "OwnableInvalidOwner",
+                "type": "error"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "account",
+                        "type": "address"
+                    }
+                ],
+                "name": "OwnableUnauthorizedAccount",
+                "type": "error"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "owner",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "spender",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "value",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "Approval",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "previousOwner",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "newOwner",
+                        "type": "address"
+                    }
+                ],
+                "name": "OwnershipTransferred",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "from",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "value",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "Transfer",
+                "type": "event"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "owner",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "spender",
+                        "type": "address"
+                    }
+                ],
+                "name": "allowance",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "spender",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "value",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "approve",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "account",
+                        "type": "address"
+                    }
+                ],
+                "name": "balanceOf",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "burn",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "account",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "burnFrom",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "decimals",
+                "outputs": [
+                    {
+                        "internalType": "uint8",
+                        "name": "",
+                        "type": "uint8"
+                    }
+                ],
+                "stateMutability": "pure",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "faucet",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "mint",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "name",
+                "outputs": [
+                    {
+                        "internalType": "string",
+                        "name": "",
+                        "type": "string"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "owner",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "renounceOwnership",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "symbol",
+                "outputs": [
+                    {
+                        "internalType": "string",
+                        "name": "",
+                        "type": "string"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "totalSupply",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "value",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "transfer",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "from",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "to",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "value",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "transferFrom",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "newOwner",
+                        "type": "address"
+                    }
+                ],
+                "name": "transferOwnership",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            }
+        ];
+
+        // Global variables
+        let web3, currentAccount, nftContract, usdtContract;
+        let testWallets = [];
+        let isTestingRunning = false;
+        let testStartTime = 0;
+        let testStats = {
+            totalTransactions: 0,
+            successfulTx: 0,
+            failedTx: 0,
+            totalGasUsed: 0,
+            totalConfirmTime: 0,
+            currentTPS: 0,
+            maxTPS: 0,
+            pendingTxs: 0
+        };
+        let tpsHistory = [];
+        let performanceChart;
+
+        // BSC Testnet configuration
+        const BSC_TESTNET = {
+            chainId: '0x61',
+            chainName: 'BSC Testnet',
+            nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
+            rpcUrls: ['https://bsc-testnet-dataseed.bnbchain.org'],
+            blockExplorerUrls: ['https://testnet.bscscan.com/']
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            logMessage('🧪 TPS Performance Tester พร้อมใช้งาน!');
+            logMessage('💡 กรุณาใส่ Contract ABI และเชื่อมต่อ Wallet');
+            initializeChart();
+            startRealTimeMonitoring();
+        });
+
+        // Connect wallet and initialize
+        async function connectWallet() {
+            try {
+                if (typeof window.ethereum === 'undefined') {
+                    throw new Error('MetaMask not found!');
+                }
+
+                await window.ethereum.request({ method: 'eth_requestAccounts' });
+                web3 = new Web3(window.ethereum);
+
+                const accounts = await web3.eth.getAccounts();
+                currentAccount = accounts[0];
+
+                // Switch to BSC Testnet
+                try {
+                    await window.ethereum.request({
+                        method: 'wallet_switchEthereumChain',
+                        params: [{ chainId: BSC_TESTNET.chainId }],
+                    });
+                } catch (switchError) {
+                    if (switchError.code === 4902) {
+                        await window.ethereum.request({
+                            method: 'wallet_addEthereumChain',
+                            params: [BSC_TESTNET],
+                        });
+                    }
+                }
+
+                // Initialize contracts (เมื่อมี ABI)
+                if (NFT_ABI.length > 0) {
+                    nftContract = new web3.eth.Contract(NFT_ABI, CRYPTO_MEMBERSHIP_NFT_ADDRESS);
+                }
+                if (USDT_ABI.length > 0) {
+                    usdtContract = new web3.eth.Contract(USDT_ABI, FAKE_USDT_ADDRESS);
+                }
+
+                logMessage(`✅ เชื่อมต่อสำเร็จ: ${shortenAddress(currentAccount)}`, 'success');
+                updateNetworkStatus();
+
+            } catch (error) {
+                logMessage(`❌ การเชื่อมต่อล้มเหลว: ${error.message}`, 'error');
+            }
+        }
+
+        // Generate test wallets
+        async function generateTestWallets(count) {
+            testWallets = [];
+            logMessage(`🔄 กำลังสร้าง ${count} Test Wallets...`);
+
+            for (let i = 0; i < count; i++) {
+                const wallet = web3.eth.accounts.create();
+                testWallets.push({
+                    address: wallet.address,
+                    privateKey: wallet.privateKey,
+                    name: `Wallet_${String.fromCharCode(65 + i)}`,
+                    nonce: 0,
+                    balance: '0'
+                });
+            }
+
+            logMessage(`✅ สร้าง ${count} Test Wallets เสร็จสิ้น`, 'success');
+            return testWallets;
+        }
+
+        // Fund test wallets
+        async function fundTestWallets() {
+            logMessage('💰 กำลัง Fund Test Wallets...');
+
+            const fundPromises = testWallets.map(async (wallet, index) => {
+                try {
+                    // Fund BNB for gas
+                    const bnbTx = await web3.eth.sendTransaction({
+                        from: currentAccount,
+                        to: wallet.address,
+                        value: web3.utils.toWei('0.1', 'ether'),
+                        gas: 21000
+                    });
+
+                    // Fund USDT if contract available
+                    if (usdtContract) {
+                        const usdtAmount = web3.utils.toWei('100', 'mwei'); // 100 USDT
+                        const usdtTx = await usdtContract.methods.faucet(wallet.address, usdtAmount)
+                            .send({ from: currentAccount, gas: 200000 });
+                    }
+
+                    logMessage(`✅ Fund ${wallet.name} สำเร็จ`);
+                } catch (error) {
+                    logMessage(`❌ Fund ${wallet.name} ล้มเหลว: ${error.message}`, 'error');
+                }
+            });
+
+            await Promise.all(fundPromises);
+            logMessage('✅ Fund ทุก Wallets เสร็จสิ้น', 'success');
+        }
+
+        // Start performance test
+        async function startPerformanceTest() {
+            if (NFT_ABI.length === 0 || USDT_ABI.length === 0) {
+                logMessage('❌ กรุณาใส่ Contract ABI ก่อนทดสอบ', 'error');
+                return;
+            }
+
+            if (!currentAccount) {
+                logMessage('❌ กรุณาเชื่อมต่อ Wallet ก่อน', 'error');
+                return;
+            }
+
+            isTestingRunning = true;
+            testStartTime = Date.now();
+            resetStats();
+
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+
+            const walletCount = parseInt(document.getElementById('walletCount').value);
+            const transactionType = document.getElementById('transactionType').value;
+            const concurrentTx = parseInt(document.getElementById('concurrentTx').value);
+            const testDuration = parseInt(document.getElementById('testDuration').value);
+
+            logMessage(`🚀 เริ่มการทดสอบประสิทธิภาพ`, 'success');
+            logMessage(`📊 พารามิเตอร์: ${walletCount} wallets, ${concurrentTx} concurrent, ${testDuration}s`, 'info');
+
+            try {
+                // สร้างและ fund wallets
+                await generateTestWallets(walletCount);
+                await fundTestWallets();
+
+                // เริ่มการทดสอบ
+                await runPerformanceTest(transactionType, concurrentTx, testDuration);
+
+            } catch (error) {
+                logMessage(`❌ การทดสอบล้มเหลว: ${error.message}`, 'error');
+                stopPerformanceTest();
+            }
+        }
+
+        // Run performance test
+        async function runPerformanceTest(transactionType, concurrentTx, testDuration) {
+            const endTime = Date.now() + (testDuration * 1000);
+            let batchCount = 0;
+
+            while (isTestingRunning && Date.now() < endTime) {
+                const batchPromises = [];
+
+                for (let i = 0; i < concurrentTx && i < testWallets.length; i++) {
+                    batchPromises.push(executeTransaction(testWallets[i], transactionType));
+                }
+
+                const results = await Promise.allSettled(batchPromises);
+
+                // อัพเดตสถิติ
+                results.forEach(result => {
+                    testStats.totalTransactions++;
+                    if (result.status === 'fulfilled') {
+                        testStats.successfulTx++;
+                        if (result.value.gasUsed) {
+                            testStats.totalGasUsed += parseInt(result.value.gasUsed);
+                        }
+                    } else {
+                        testStats.failedTx++;
+                    }
+                });
+
+                // คำนวณ TPS
+                const elapsedSeconds = (Date.now() - testStartTime) / 1000;
+                testStats.currentTPS = testStats.totalTransactions / elapsedSeconds;
+                if (testStats.currentTPS > testStats.maxTPS) {
+                    testStats.maxTPS = testStats.currentTPS;
+                }
+
+                updateStatsDisplay();
+                updateChart();
+
+                batchCount++;
+                const progress = Math.min(100, ((Date.now() - testStartTime) / (testDuration * 1000)) * 100);
+                updateProgress(progress, `Batch ${batchCount} - ${testStats.currentTPS.toFixed(2)} TPS`);
+
+                // หน่วงเวลาเล็กน้อยเพื่อไม่ให้ระบบโอเวอร์โหลด
+                await sleep(1000);
+            }
+
+            if (isTestingRunning) {
+                logMessage('✅ การทดสอบเสร็จสิ้น', 'success');
+                stopPerformanceTest();
+            }
+        }
+
+        // Execute transaction
+        async function executeTransaction(wallet, type) {
+            const startTime = Date.now();
+
+            try {
+                // Add wallet to Web3 accounts
+                const account = web3.eth.accounts.privateKeyToAccount(wallet.privateKey);
+                web3.eth.accounts.wallet.add(account);
+
+                let tx;
+
+                switch (type) {
+                    case 'register':
+                        tx = await nftContract.methods.registerMember(1, currentAccount)
+                            .send({
+                                from: wallet.address,
+                                gas: 500000,
+                                gasPrice: web3.utils.toWei(document.getElementById('gasPrice').value, 'gwei')
+                            });
+                        break;
+
+                    case 'approve':
+                        const approveAmount = web3.utils.toWei('1000', 'mwei');
+                        tx = await usdtContract.methods.approve(CRYPTO_MEMBERSHIP_NFT_ADDRESS, approveAmount)
+                            .send({
+                                from: wallet.address,
+                                gas: 200000,
+                                gasPrice: web3.utils.toWei(document.getElementById('gasPrice').value, 'gwei')
+                            });
+                        break;
+
+                    case 'upgrade':
+                        // สำหรับ upgrade ต้องเป็น member ก่อน
+                        tx = await nftContract.methods.upgradePlan(2)
+                            .send({
+                                from: wallet.address,
+                                gas: 400000,
+                                gasPrice: web3.utils.toWei(document.getElementById('gasPrice').value, 'gwei')
+                            });
+                        break;
+
+                    default:
+                        // Mixed - สุ่มเลือก
+                        const randomType = Math.random() < 0.5 ? 'approve' : 'register';
+                        return await executeTransaction(wallet, randomType);
+                }
+
+                const confirmTime = (Date.now() - startTime) / 1000;
+                testStats.totalConfirmTime += confirmTime;
+
+                // Remove wallet from Web3 accounts
+                web3.eth.accounts.wallet.remove(account);
+
+                logMessage(`✅ ${type} สำเร็จ: ${shortenAddress(wallet.address)} (${confirmTime.toFixed(2)}s)`, 'success');
+
+                return {
+                    success: true,
+                    gasUsed: tx.gasUsed,
+                    confirmTime: confirmTime,
+                    hash: tx.transactionHash
+                };
+
+            } catch (error) {
+                logMessage(`❌ ${type} ล้มเหลว: ${shortenAddress(wallet.address)} - ${error.message}`, 'error');
+                return { success: false, error: error.message };
+            }
+        }
+
+        // Stop performance test
+        function stopPerformanceTest() {
+            isTestingRunning = false;
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+
+            logMessage('⏹️ การทดสอบหยุดแล้ว', 'warning');
+
+            // แสดงสถิติสุดท้าย
+            const elapsedTime = (Date.now() - testStartTime) / 1000;
+            logMessage(`📊 สรุปผล: ${testStats.totalTransactions} tx ใน ${elapsedTime.toFixed(1)}s`, 'info');
+            logMessage(`🎯 TPS เฉลี่ย: ${testStats.currentTPS.toFixed(2)}, สูงสุด: ${testStats.maxTPS.toFixed(2)}`, 'info');
+        }
+
+        // Update statistics display
+        function updateStatsDisplay() {
+            document.getElementById('currentTPS').textContent = testStats.currentTPS.toFixed(2);
+            document.getElementById('totalTransactions').textContent = testStats.totalTransactions;
+            document.getElementById('successfulTx').textContent = testStats.successfulTx;
+            document.getElementById('failedTx').textContent = testStats.failedTx;
+            document.getElementById('maxTPS').textContent = testStats.maxTPS.toFixed(2);
+
+            if (testStats.totalTransactions > 0) {
+                const avgGas = Math.round(testStats.totalGasUsed / testStats.successfulTx) || 0;
+                const avgTime = (testStats.totalConfirmTime / testStats.successfulTx).toFixed(2) || 0;
+                document.getElementById('avgGasUsed').textContent = avgGas.toLocaleString();
+                document.getElementById('avgConfirmTime').textContent = avgTime;
+            }
+        }
+
+        // Update network status
+        async function updateNetworkStatus() {
+            try {
+                const gasPrice = await web3.eth.getGasPrice();
+                const gasPriceGwei = web3.utils.fromWei(gasPrice, 'gwei');
+                document.getElementById('currentGasPrice').textContent = `${parseFloat(gasPriceGwei).toFixed(1)} Gwei`;
+                document.getElementById('networkStatus').textContent = 'Connected';
+
+                // Update indicators based on performance
+                const gasPriceNum = parseFloat(gasPriceGwei);
+                const gasIndicator = document.getElementById('gasIndicator');
+                if (gasPriceNum < 10) {
+                    gasIndicator.className = 'performance-indicator indicator-good';
+                } else if (gasPriceNum < 20) {
+                    gasIndicator.className = 'performance-indicator indicator-medium';
+                } else {
+                    gasIndicator.className = 'performance-indicator indicator-poor';
+                }
+
+            } catch (error) {
+                document.getElementById('networkStatus').textContent = 'Disconnected';
+                document.getElementById('currentGasPrice').textContent = '- Gwei';
+            }
+        }
+
+        // Initialize chart
+        function initializeChart() {
+            const ctx = document.getElementById('performanceChart').getContext('2d');
+
+            // Simple chart implementation without Chart.js dependency
+            const canvas = document.getElementById('performanceChart');
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth - 40;
+            canvas.height = container.clientHeight - 40;
+
+            logMessage('📈 กราฟประสิทธิภาพพร้อมใช้งาน');
+        }
+
+        // Update chart
+        function updateChart() {
+            const canvas = document.getElementById('performanceChart');
+            const ctx = canvas.getContext('2d');
+
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Add current TPS to history
+            tpsHistory.push({
+                time: Date.now(),
+                tps: testStats.currentTPS
+            });
+
+            // Keep only last 60 data points
+            if (tpsHistory.length > 60) {
+                tpsHistory.shift();
+            }
+
+            if (tpsHistory.length < 2) return;
+
+            // Draw chart
+            ctx.strokeStyle = '#4c51bf';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+
+            const maxTPS = Math.max(...tpsHistory.map(d => d.tps), 1);
+            const width = canvas.width;
+            const height = canvas.height;
+            const padding = 40;
+
+            tpsHistory.forEach((point, index) => {
+                const x = padding + (index / (tpsHistory.length - 1)) * (width - 2 * padding);
+                const y = height - padding - (point.tps / maxTPS) * (height - 2 * padding);
+
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+
+            ctx.stroke();
+
+            // Draw axes
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+
+            // Y-axis
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, height - padding);
+
+            // X-axis
+            ctx.moveTo(padding, height - padding);
+            ctx.lineTo(width - padding, height - padding);
+
+            ctx.stroke();
+
+            // Draw labels
+            ctx.fillStyle = '#666';
+            ctx.font = '12px Arial';
+            ctx.fillText('TPS', 10, 20);
+            ctx.fillText('Time', width - 40, height - 10);
+            ctx.fillText(maxTPS.toFixed(1), 10, padding + 10);
+            ctx.fillText('0', 10, height - padding + 15);
+        }
+
+        // Start real-time monitoring
+        function startRealTimeMonitoring() {
+            setInterval(async () => {
+                if (currentAccount && web3) {
+                    await updateNetworkStatus();
+
+                    // Update pending transactions count
+                    try {
+                        const pendingTx = await web3.eth.getPendingTransactions();
+                        document.getElementById('pendingTxCount').textContent = pendingTx.length;
+
+                        const pendingIndicator = document.getElementById('mempoolIndicator');
+                        if (pendingTx.length < 100) {
+                            pendingIndicator.className = 'performance-indicator indicator-good';
+                        } else if (pendingTx.length < 500) {
+                            pendingIndicator.className = 'performance-indicator indicator-medium';
+                        } else {
+                            pendingIndicator.className = 'performance-indicator indicator-poor';
+                        }
+                    } catch (error) {
+                        // Some networks don't support getPendingTransactions
+                        document.getElementById('pendingTxCount').textContent = 'N/A';
+                    }
+                }
+            }, 5000); // Update every 5 seconds
+        }
+
+        // Auto-connect wallet on page load
+        window.addEventListener('load', async () => {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                    if (accounts.length > 0) {
+                        await connectWallet();
+                    }
+                } catch (error) {
+                    logMessage('ℹ️ กรุณาเชื่อมต่อ Wallet เพื่อเริ่มการทดสอบ');
+                }
+            } else {
+                logMessage('❌ กรุณาติดตั้ง MetaMask', 'error');
+            }
+        });
+
+        // Reset statistics
+        function resetStats() {
+            testStats = {
+                totalTransactions: 0,
+                successfulTx: 0,
+                failedTx: 0,
+                totalGasUsed: 0,
+                totalConfirmTime: 0,
+                currentTPS: 0,
+                maxTPS: 0,
+                pendingTxs: 0
+            };
+            tpsHistory = [];
+            updateStatsDisplay();
+            updateProgress(0, 'พร้อมเริ่มการทดสอบ...');
+        }
+
+        // Update progress
+        function updateProgress(percent, text) {
+            document.getElementById('testProgress').style.width = `${percent}%`;
+            document.getElementById('progressText').textContent = text;
+        }
+
+        // Log message
+        function logMessage(message, type = 'info') {
+            const logContainer = document.getElementById('logContainer');
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.textContent = `[${timestamp}] ${message}`;
+            logContainer.appendChild(entry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        // Clear log
+        function clearLog() {
+            document.getElementById('logContainer').innerHTML =
+                '<div class="log-entry log-info">[' + new Date().toLocaleTimeString() + '] 📝 บันทึกถูกล้างแล้ว</div>';
+        }
+
+        // Utility functions
+        function shortenAddress(address) {
+            if (!address) return "";
+            return `${address.slice(0, 6)}...${address.slice(-4)}`;
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // Handle wallet events
+        if (typeof window.ethereum !== 'undefined') {
+            window.ethereum.on('accountsChanged', (accounts) => {
+                if (accounts.length === 0) {
+                    logMessage('🔌 Wallet ถูกตัดการเชื่อมต่อ', 'warning');
+                    currentAccount = null;
+                } else {
+                    currentAccount = accounts[0];
+                    logMessage(`🔄 เปลี่ยนบัญชี: ${shortenAddress(currentAccount)}`);
+                }
+            });
+
+            window.ethereum.on('chainChanged', (chainId) => {
+                if (chainId !== BSC_TESTNET.chainId) {
+                    logMessage('⚠️ กรุณาเปลี่ยนไปยัง BSC Testnet', 'warning');
+                } else {
+                    logMessage('✅ เชื่อมต่อกับ BSC Testnet แล้ว', 'success');
+                }
+            });
+        }
+
+        // Export functions for debugging
+        window.tpsDebug = {
+            testStats: () => testStats,
+            tpsHistory: () => tpsHistory,
+            testWallets: () => testWallets,
+            connectWallet: connectWallet,
+            startTest: startPerformanceTest,
+            stopTest: stopPerformanceTest,
+            resetStats: resetStats
+        };
+
+        // Performance monitoring tips
+        function showPerformanceTips() {
+            logMessage('💡 เทคนิคเพิ่มประสิทธิภาพ:', 'info');
+            logMessage('1. ใช้ Gas Price ที่เหมาะสม (5-20 Gwei)', 'info');
+            logMessage('2. ลด Concurrent Transactions หากเครือข่ายช้า', 'info');
+            logMessage('3. ตรวจสอบ Pending Transactions ก่อนส่งชุดใหม่', 'info');
+            logMessage('4. ใช้ Batch Size ที่เหมาะสมกับ Gas Limit', 'info');
+        }
+
+        // Run performance tips after page load
+        setTimeout(() => {
+            if (!isTestingRunning) {
+                showPerformanceTips();
+            }
+        }, 5000);
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (event) => {
+            if (event.ctrlKey) {
+                switch (event.key) {
+                    case 's':
+                        event.preventDefault();
+                        if (!isTestingRunning) {
+                            startPerformanceTest();
+                        } else {
+                            stopPerformanceTest();
+                        }
+                        break;
+                    case 'r':
+                        event.preventDefault();
+                        resetStats();
+                        break;
+                    case 'l':
+                        event.preventDefault();
+                        clearLog();
+                        break;
+                }
+            }
+        });
+
+        // Add connection button if not auto-connected
+        if (typeof window.ethereum !== 'undefined') {
+            window.ethereum.request({ method: 'eth_accounts' }).then(accounts => {
+                if (accounts.length === 0) {
+                    const connectBtn = document.createElement('button');
+                    connectBtn.className = 'btn btn-success';
+                    connectBtn.textContent = '🔗 เชื่อมต่อ Wallet';
+                    connectBtn.onclick = connectWallet;
+                    document.querySelector('.header').appendChild(connectBtn);
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

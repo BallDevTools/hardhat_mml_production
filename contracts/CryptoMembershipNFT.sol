@@ -79,6 +79,12 @@ contract CryptoMembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
         uint256 newPlanId,
         uint256 cycleNumber
     );
+
+    event PlanPriceUpdated(
+        uint256 indexed planId,
+        uint256 oldPrice,
+        uint256 newPrice
+    );
     event NewCycleStarted(uint256 planId, uint256 cycleNumber);
     event EmergencyWithdraw(address indexed to, uint256 amount);
     event ContractPaused(bool status);
@@ -111,7 +117,30 @@ contract CryptoMembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
         uint256 tokenId
     );
     event MembershipMinted(address indexed to, uint256 tokenId, string message);
+    event OwnerUpgradeBypass(
+        address indexed owner,
+        uint256 fromPlan,
+        uint256 toPlan,
+        uint256 timestamp
+    );
 
+    event ValidationError(
+        address indexed user,
+        string reason,
+        uint256 timestamp
+    );
+
+    event FundBalanceUpdated(
+        uint256 oldBalance,
+        uint256 newBalance,
+        string operation
+    );
+
+    event ContractBalanceAlert(
+        uint256 expected,
+        uint256 actual,
+        uint256 difference
+    );
     modifier whenNotPaused() {
         if (state.paused) revert ContractErrors.Paused();
         _;
@@ -142,16 +171,38 @@ contract CryptoMembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
         _;
     }
 
-    constructor(
-        address _usdtToken,
-        address initialOwner
-    ) ERC721("Crypto Membership NFT", "CMNFT") Ownable(initialOwner) {
+    constructor(address _usdtToken, address initialOwner)
+        ERC721("Chainsx", "CSX")
+        Ownable(initialOwner)
+    {
         usdtToken = IERC20(_usdtToken);
         _tokenDecimals = IERC20Metadata(_usdtToken).decimals();
         if (_tokenDecimals == 0) revert ContractErrors.InvalidDecimals();
         _createDefaultPlans();
         _setupDefaultImages();
         _baseTokenURI = "ipfs://";
+
+        _createOwnerMembership(initialOwner);
+    }
+
+    function _createOwnerMembership(address ownerAddress) internal {
+        uint256 highestPlanId = state.planCount; // Plan 16
+        uint256 tokenId = state.tokenIdCounter++;
+
+        _safeMintWithNotice(ownerAddress, tokenId);
+        _setTokenImage(tokenId, highestPlanId);
+
+        members[ownerAddress] = MembershipLib.Member(
+            address(0),
+            0,
+            0,
+            highestPlanId,
+            1,
+            block.timestamp
+        );
+        state.firstMemberRegistered = true;
+
+        emit MemberRegistered(ownerAddress, address(0), highestPlanId, 1);
     }
 
     function _setupDefaultImages() internal {
@@ -206,13 +257,64 @@ contract CryptoMembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
     }
 
     function _createDefaultPlans() internal {
-        uint256 decimal = 10 ** _tokenDecimals;
-        for (uint256 i = 1; i <= 16; ) {
-            _createPlan(
-                i * decimal,
-                NFTMetadataLib.uint2str(i),
-                MAX_MEMBERS_PER_CYCLE
-            );
+        uint256 decimal = 10**_tokenDecimals;
+
+        uint256[] memory prices = new uint256[](16);
+        prices[0] = 1 * decimal;
+        prices[1] = 2 * decimal;
+        prices[2] = 3 * decimal;
+        prices[3] = 4 * decimal;
+        prices[4] = 5 * decimal;
+        prices[5] = 6 * decimal;
+        prices[6] = 7 * decimal;
+        prices[7] = 8 * decimal;
+        prices[8] = 9 * decimal;
+        prices[9] = 10 * decimal;
+        prices[10] = 11 * decimal;
+        prices[11] = 12 * decimal;
+        prices[12] = 13 * decimal;
+        prices[13] = 14 * decimal;
+        prices[14] = 15 * decimal;
+        prices[15] = 16 * decimal; // Plan 16: $150,000
+
+        uint256[] memory membersPerCycle = new uint256[](16);
+        membersPerCycle[0] = 4;
+        membersPerCycle[1] = 4;
+        membersPerCycle[2] = 4;
+        membersPerCycle[3] = 4;
+        membersPerCycle[4] = 4;
+        membersPerCycle[5] = 4;
+        membersPerCycle[6] = 4;
+        membersPerCycle[7] = 4;
+        membersPerCycle[8] = 4;
+        membersPerCycle[9] = 4;
+        membersPerCycle[10] = 4;
+        membersPerCycle[11] = 4;
+        membersPerCycle[12] = 5;
+        membersPerCycle[13] = 5;
+        membersPerCycle[14] = 5;
+        membersPerCycle[15] = 5;
+
+        string[] memory planNames = new string[](16);
+        planNames[0] = "Starter";
+        planNames[1] = "Basic";
+        planNames[2] = "Bronze";
+        planNames[3] = "Silver";
+        planNames[4] = "Gold";
+        planNames[5] = "Platinum";
+        planNames[6] = "Diamond";
+        planNames[7] = "Elite";
+        planNames[8] = "Master";
+        planNames[9] = "Grand Master";
+        planNames[10] = "Champion";
+        planNames[11] = "Legend";
+        planNames[12] = "Supreme";
+        planNames[13] = "Ultimate";
+        planNames[14] = "Apex";
+        planNames[15] = "Infinity";
+
+        for (uint256 i = 0; i < 16; ) {
+            _createPlan(prices[i], planNames[i], membersPerCycle[i]);
             unchecked {
                 ++i;
             }
@@ -232,26 +334,11 @@ contract CryptoMembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
         return super._update(to, tokenId, auth);
     }
 
-    function createPlan(
-        uint256 _price,
-        string calldata _name,
-        uint256 _membersPerCycle
-    ) external onlyOwner {
-        if (_membersPerCycle != MAX_MEMBERS_PER_CYCLE)
-            revert ContractErrors.InvalidCycleMembers();
-        if (bytes(_name).length == 0) revert ContractErrors.EmptyName();
-        if (_price == 0) revert ContractErrors.ZeroPrice();
-        _createPlan(_price, _name, _membersPerCycle);
-    }
-
     function _createPlan(
         uint256 _price,
         string memory _name,
         uint256 _membersPerCycle
     ) internal {
-        if (state.planCount > 0 && _price <= plans[state.planCount].price)
-            revert ContractErrors.PriceTooLow();
-
         state.planCount++;
         plans[state.planCount] = MembershipLib.MembershipPlan(
             _price,
@@ -263,10 +350,24 @@ contract CryptoMembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
         emit PlanCreated(state.planCount, _name, _price, _membersPerCycle);
     }
 
-    function setPlanDefaultImage(
-        uint256 _planId,
-        string calldata _imageURI
-    ) external onlyOwner {
+    function updatePlanPrice(uint256 _planId, uint256 _newPrice)
+        external
+        onlyOwner
+    {
+        if (_planId == 0 || _planId > state.planCount)
+            revert ContractErrors.InvalidPlanID();
+        if (_newPrice == 0) revert ContractErrors.ZeroPrice();
+
+        uint256 oldPrice = plans[_planId].price;
+        plans[_planId].price = _newPrice;
+
+        emit PlanPriceUpdated(_planId, oldPrice, _newPrice);
+    }
+
+    function setPlanDefaultImage(uint256 _planId, string calldata _imageURI)
+        external
+        onlyOwner
+    {
         if (_planId == 0 || _planId > state.planCount)
             revert ContractErrors.InvalidPlanID();
         if (bytes(_imageURI).length == 0) revert ContractErrors.EmptyURI();
@@ -274,9 +375,35 @@ contract CryptoMembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
         emit PlanDefaultImageSet(_planId, _imageURI);
     }
 
-    function getNFTImage(
-        uint256 _tokenId
-    )
+    function getPlanInfo(uint256 _planId)
+        external
+        view
+        returns (
+            uint256 price,
+            string memory name,
+            uint256 membersPerCycle,
+            bool isActive,
+            string memory imageURI
+        )
+    {
+        if (_planId == 0 || _planId > state.planCount)
+            revert ContractErrors.InvalidPlanID();
+
+        MembershipLib.MembershipPlan memory plan = plans[_planId];
+        return (
+            plan.price,
+            plan.name,
+            plan.membersPerCycle,
+            plan.isActive,
+            planDefaultImages[_planId]
+        );
+    }
+
+    function getTotalPlanCount() external view returns (uint256) {
+        return state.planCount;
+    }
+
+    function getNFTImage(uint256 _tokenId)
         external
         view
         returns (
@@ -298,9 +425,12 @@ contract CryptoMembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
         );
     }
 
-    function tokenURI(
-        uint256 _tokenId
-    ) public view override returns (string memory) {
+    function tokenURI(uint256 _tokenId)
+        public
+        view
+        override
+        returns (string memory)
+    {
         if (!_exists(_tokenId)) revert ContractErrors.NonexistentToken();
         NFTImage memory image = tokenImages[_tokenId];
         return
@@ -331,10 +461,7 @@ contract CryptoMembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
         return false;
     }
 
-    function registerMember(
-        uint256 _planId,
-        address _upline
-    )
+    function registerMember(uint256 _planId, address _upline)
         external
         nonReentrant
         whenNotPaused
@@ -343,14 +470,12 @@ contract CryptoMembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
     {
         bool isOwnerRegistering = msg.sender == owner();
 
-        if (
-            !isOwnerRegistering && (_planId != 1 || _planId > state.planCount)
-        ) {
-            revert ContractErrors.Plan1Only();
+        if (isOwnerRegistering) {
+            revert ContractErrors.AlreadyMember();
         }
 
-        if (_planId == 0 || _planId > state.planCount) {
-            revert ContractErrors.InvalidPlanID();
+        if (_planId != 1 || _planId > state.planCount) {
+            revert ContractErrors.Plan1Only();
         }
 
         if (!plans[_planId].isActive) {
@@ -366,20 +491,14 @@ contract CryptoMembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
         }
 
         address finalUpline;
-
-        if (!state.firstMemberRegistered) {
-            state.firstMemberRegistered = true;
-            finalUpline = owner();
-        } else if (_upline == address(0) || _upline == msg.sender) {
+        if (_upline == address(0) || _upline == msg.sender) {
             finalUpline = owner();
         } else {
             if (_upline == owner()) {
                 finalUpline = _upline;
             } else if (balanceOf(_upline) == 0) {
                 revert ContractErrors.UplineNotMember();
-            } else if (
-                !isOwnerRegistering && members[_upline].planId < _planId
-            ) {
+            } else if (members[_upline].planId < _planId) {
                 revert ContractErrors.UplinePlanLow();
             } else {
                 _referralChain[msg.sender] = new address[](1);
@@ -453,10 +572,9 @@ contract CryptoMembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
         );
     }
 
-    function _handleUplinePayment(
-        address _upline,
-        uint256 _uplineShare
-    ) internal {
+    function _handleUplinePayment(address _upline, uint256 _uplineShare)
+        internal
+    {
         if (
             _upline == address(0) ||
             members[_upline].planId < members[msg.sender].planId
@@ -479,9 +597,7 @@ contract CryptoMembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
         emit ReferralPaid(_from, _to, _amount);
     }
 
-    function upgradePlan(
-        uint256 _newPlanId
-    )
+    function upgradePlan(uint256 _newPlanId)
         external
         nonReentrant
         whenNotPaused
@@ -489,10 +605,15 @@ contract CryptoMembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
         preventFrontRunning
         noReentrantTransfer
     {
-        if (
-            block.timestamp < _lastUpgradeRequest[msg.sender] + UPGRADE_COOLDOWN
-        ) {
-            revert ContractErrors.CooldownActive();
+        bool isOwnerUpgrading = msg.sender == owner();
+
+        if (!isOwnerUpgrading) {
+            if (
+                block.timestamp <
+                _lastUpgradeRequest[msg.sender] + UPGRADE_COOLDOWN
+            ) {
+                revert ContractErrors.CooldownActive();
+            }
         }
         _lastUpgradeRequest[msg.sender] = block.timestamp;
 
@@ -508,8 +629,6 @@ contract CryptoMembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
         uint256 oldPlanId = member.planId;
         address upline = member.upline;
 
-        bool isOwnerUpgrading = msg.sender == owner();
-
         if (!isOwnerUpgrading) {
             if (_newPlanId != member.planId + 1) {
                 revert ContractErrors.NextPlanOnly();
@@ -523,108 +642,142 @@ contract CryptoMembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
         uint256 priceDifference = plans[_newPlanId].price -
             plans[oldPlanId].price;
 
-        _completeUpgradePlan(_newPlanId, oldPlanId, upline, priceDifference);
+        if (!isOwnerUpgrading) {
+            usdtToken.safeTransferFrom(
+                msg.sender,
+                address(this),
+                priceDifference
+            );
+        }
+
+        _completeUpgradePlan(
+            _newPlanId,
+            oldPlanId,
+            upline,
+            priceDifference,
+            isOwnerUpgrading
+        );
     }
 
     function _completeUpgradePlan(
-    uint256 _newPlanId,
-    uint256 oldPlanId,
-    address upline,
-    uint256 priceDifference
-) private {
-    MembershipLib.CycleInfo storage cycleInfo = planCycles[_newPlanId];
-    cycleInfo.membersInCurrentCycle++;
-    if (
-        cycleInfo.membersInCurrentCycle >= plans[_newPlanId].membersPerCycle
-    ) {
-        cycleInfo.currentCycle++;
-        cycleInfo.membersInCurrentCycle = 0;
-        emit NewCycleStarted(_newPlanId, cycleInfo.currentCycle);
-    }
+        uint256 _newPlanId,
+        uint256 oldPlanId,
+        address upline,
+        uint256 priceDifference,
+        bool isOwnerUpgrading
+    ) private {
+        MembershipLib.CycleInfo storage cycleInfo = planCycles[_newPlanId];
+        cycleInfo.membersInCurrentCycle++;
+        if (
+            cycleInfo.membersInCurrentCycle >= plans[_newPlanId].membersPerCycle
+        ) {
+            cycleInfo.currentCycle++;
+            cycleInfo.membersInCurrentCycle = 0;
+            emit NewCycleStarted(_newPlanId, cycleInfo.currentCycle);
+        }
 
-    members[msg.sender].cycleNumber = cycleInfo.currentCycle;
-    members[msg.sender].planId = _newPlanId;
-
-    uint256 tokenId = tokenOfOwnerByIndex(msg.sender, 0);
-    NFTImage storage image = tokenImages[tokenId];
-    image.planId = _newPlanId;
-    image.name = plans[_newPlanId].name;
-    image.description = string(
-        abi.encodePacked("Crypto Membership NFT - ", image.name, " Plan")
-    );
-    image.imageURI = planDefaultImages[_newPlanId];
-
-    (
-        uint256 ownerShare,
-        uint256 feeShare,
-        uint256 fundShare,
-        uint256 uplineShare
-    ) = FinanceLib.distributeFunds(priceDifference, _newPlanId);
-
-    state.ownerBalance += ownerShare;
-    state.feeSystemBalance += feeShare;
-    state.fundBalance += fundShare;
-
-    if (upline != address(0) && members[upline].planId < _newPlanId) {
-        emit UplineNotified(upline, msg.sender, oldPlanId, _newPlanId);
-    }
-
-    usdtToken.safeTransferFrom(msg.sender, address(this), priceDifference);
-
-    _handleUplinePayment(upline, uplineShare);
-
-    emit FundsDistributed(ownerShare, feeShare, fundShare);
-    emit PlanUpgraded(
-        msg.sender,
-        oldPlanId,
-        _newPlanId,
-        cycleInfo.currentCycle
-    );
-    
-    emit MetadataUpdated(tokenId, tokenURI(tokenId));
-}
-
-    function exitMembership() external nonReentrant whenNotPaused onlyMember {
-        MembershipLib.Member storage member = members[msg.sender];
-        if (block.timestamp <= member.registeredAt + 30 days)
-            revert ContractErrors.ThirtyDayLock();
-
-        uint256 refundAmount = (plans[member.planId].price * 30) / 100;
-        if (state.fundBalance < refundAmount)
-            revert ContractErrors.LowFundBalance();
-
-        state.fundBalance -= refundAmount;
+        members[msg.sender].cycleNumber = cycleInfo.currentCycle;
+        members[msg.sender].planId = _newPlanId;
 
         uint256 tokenId = tokenOfOwnerByIndex(msg.sender, 0);
-        delete tokenImages[tokenId];
-        _burn(tokenId);
-        delete members[msg.sender];
+        NFTImage storage image = tokenImages[tokenId];
+        image.planId = _newPlanId;
+        image.name = plans[_newPlanId].name;
+        image.description = string(
+            abi.encodePacked("Crypto Membership NFT - ", image.name, " Plan")
+        );
+        image.imageURI = planDefaultImages[_newPlanId];
 
-        usdtToken.safeTransfer(msg.sender, refundAmount);
-        emit MemberExited(msg.sender, refundAmount);
+        if (!isOwnerUpgrading) {
+            (
+                uint256 ownerShare,
+                uint256 feeShare,
+                uint256 fundShare,
+                uint256 uplineShare
+            ) = FinanceLib.distributeFunds(priceDifference, _newPlanId);
+
+            state.ownerBalance += ownerShare;
+            state.feeSystemBalance += feeShare;
+            state.fundBalance += fundShare;
+
+            if (upline != address(0) && members[upline].planId < _newPlanId) {
+                emit UplineNotified(upline, msg.sender, oldPlanId, _newPlanId);
+            }
+
+            _handleUplinePayment(upline, uplineShare);
+            emit FundsDistributed(ownerShare, feeShare, fundShare);
+        } else {
+            emit OwnerUpgradeBypass(
+                msg.sender,
+                oldPlanId,
+                _newPlanId,
+                block.timestamp
+            );
+        }
+
+        emit PlanUpgraded(
+            msg.sender,
+            oldPlanId,
+            _newPlanId,
+            cycleInfo.currentCycle
+        );
+        emit MetadataUpdated(tokenId, tokenURI(tokenId));
     }
 
-    function withdrawOwnerBalance(
-        uint256 amount
-    ) external onlyOwner nonReentrant noReentrantTransfer {
+    function exitMembership() external nonReentrant whenNotPaused onlyMember {
+    if (msg.sender == owner()) {
+        revert ContractErrors.InvalidRequest();
+    }
+    
+    MembershipLib.Member storage member = members[msg.sender];
+    if (block.timestamp <= member.registeredAt + 30 days)
+        revert ContractErrors.ThirtyDayLock();
+
+    uint256 refundAmount = (plans[member.planId].price * 30) / 100;
+    if (state.fundBalance < refundAmount)
+        revert ContractErrors.LowFundBalance();
+
+    state.fundBalance -= refundAmount;
+
+    uint256 tokenId = tokenOfOwnerByIndex(msg.sender, 0);
+    delete tokenImages[tokenId];
+    _burn(tokenId);
+    delete members[msg.sender];
+
+    usdtToken.safeTransfer(msg.sender, refundAmount);
+    emit MemberExited(msg.sender, refundAmount);
+}
+
+    function withdrawOwnerBalance(uint256 amount)
+        external
+        onlyOwner
+        nonReentrant
+        noReentrantTransfer
+    {
         if (amount > state.ownerBalance)
             revert ContractErrors.LowOwnerBalance();
         state.ownerBalance -= amount;
         usdtToken.safeTransfer(owner(), amount);
     }
 
-    function withdrawFeeSystemBalance(
-        uint256 amount
-    ) external onlyOwner nonReentrant noReentrantTransfer {
+    function withdrawFeeSystemBalance(uint256 amount)
+        external
+        onlyOwner
+        nonReentrant
+        noReentrantTransfer
+    {
         if (amount > state.feeSystemBalance)
             revert ContractErrors.LowFeeBalance();
         state.feeSystemBalance -= amount;
         usdtToken.safeTransfer(owner(), amount);
     }
 
-    function withdrawFundBalance(
-        uint256 amount
-    ) external onlyOwner nonReentrant noReentrantTransfer {
+    function withdrawFundBalance(uint256 amount)
+        external
+        onlyOwner
+        nonReentrant
+        noReentrantTransfer
+    {
         if (amount > state.fundBalance) revert ContractErrors.LowFundBalance();
         state.fundBalance -= amount;
         usdtToken.safeTransfer(owner(), amount);
@@ -636,9 +789,12 @@ contract CryptoMembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
         uint256 balanceType;
     }
 
-    function batchWithdraw(
-        WithdrawalRequest[] calldata requests
-    ) external onlyOwner nonReentrant noReentrantTransfer {
+    function batchWithdraw(WithdrawalRequest[] calldata requests)
+        external
+        onlyOwner
+        nonReentrant
+        noReentrantTransfer
+    {
         if (requests.length == 0 || requests.length > 20)
             revert ContractErrors.InvalidRequests();
 
@@ -675,9 +831,7 @@ contract CryptoMembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
         emit BatchWithdrawalProcessed(totalOwner, totalFee, totalFund);
     }
 
-    function getPlanCycleInfo(
-        uint256 _planId
-    )
+    function getPlanCycleInfo(uint256 _planId)
         external
         view
         returns (
@@ -749,21 +903,23 @@ contract CryptoMembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
         );
     }
 
-    function getReferralChain(
-        address _member
-    ) external view returns (address[] memory) {
+    function getReferralChain(address _member)
+        external
+        view
+        returns (address[] memory)
+    {
         address[] memory chain = new address[](1);
         chain[0] = members[_member].upline;
         return chain;
     }
 
-    function updateMembersPerCycle(
-        uint256 _planId,
-        uint256 _newMembersPerCycle
-    ) external onlyOwner {
+    function updateMembersPerCycle(uint256 _planId, uint256 _newMembersPerCycle)
+        external
+        onlyOwner
+    {
         if (_planId == 0 || _planId > state.planCount)
             revert ContractErrors.InvalidPlanID();
-        if (_newMembersPerCycle != MAX_MEMBERS_PER_CYCLE)
+        if (_newMembersPerCycle == 0)
             revert ContractErrors.InvalidCycleMembers();
         plans[_planId].membersPerCycle = _newMembersPerCycle;
     }
@@ -885,7 +1041,11 @@ contract CryptoMembershipNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
     function validateContractBalance()
         public
         view
-        returns (bool, uint256, uint256)
+        returns (
+            bool,
+            uint256,
+            uint256
+        )
     {
         uint256 expectedBalance = state.ownerBalance +
             state.feeSystemBalance +
